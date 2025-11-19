@@ -1,0 +1,18 @@
+import jwt from "jsonwebtoken";
+
+export const generateToken = (userId) => {
+  const token = jwt.sign(
+    { id: userId },
+    process.env.JWT_SECRET,
+    { expiresIn: "30d" } // token valid for 30 days
+  );
+  return token;
+};
+
+export const verifyToken = (token) => {
+  try {
+    return jwt.verify(token, process.env.JWT_SECRET);
+  } catch (error) {
+    return null;
+  }
+};
