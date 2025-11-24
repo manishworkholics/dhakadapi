@@ -64,7 +64,7 @@ export const verifyOtpService = async (phone, otp) => {
 
 
 // Register new user
-export const registerUserService = async (name, email, password) => {
+export const registerUserService = async (name, email,phone,createdfor, password) => {
   const existing = await User.findOne({ email });
   if (existing) throw new Error("Email already registered");
 
@@ -72,6 +72,8 @@ export const registerUserService = async (name, email, password) => {
   const user = await User.create({
     name,
     email,
+    phone,
+    createdfor,
     password: hashedPassword,
     isVerified: true, // since it’s manual signup
   });

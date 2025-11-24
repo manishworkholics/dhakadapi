@@ -38,16 +38,16 @@ export const verifyOtp = async (req, res) => {
 
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
-    if (!email || !password)
+    const { name, email,phone,createdfor, password } = req.body;
+    if (!email || !password || !phone)
       return res.status(400).json({ message: "Email and password are required" });
 
-    const { user, token } = await registerUserService(name, email, password);
+    const { user, token } = await registerUserService(name, email,phone,createdfor, password);
     res.status(201).json({
       success: true,
       message: "Registration successful",
       token,
-      user: { id: user._id, name: user.name, email: user.email },
+      user: { id: user._id, name: user.name, email: user.email ,phone:user.phone,createdfor:user.createdfor},
     });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
