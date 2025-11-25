@@ -8,45 +8,51 @@ const profileSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
-    name: { type: String, required: true },
-    gender: { type: String, enum: ["Male", "Female"], required: true },
-    dob: { type: Date, required: true },
-    community: { type: String, required: true },
-    location: {
-      city: String,
-      state: String,
-      country: String,
+
+    // Step 1
+    dob: { type: Date },
+    motherTongue: { type: String },
+    email: { type: String },
+
+    // Step 2
+    height: { type: String },
+    physicalStatus: { type: String, enum: ["Normal", "Physically challenged"] },
+    maritalStatus: {
+      type: String,
+      enum: ["Never married", "Widower", "Awaiting divorce", "Divorced"],
     },
-    education: String,
-    profession: String,
-    income: String,
-    familyDetails: {
-      fatherName: String,
-      motherName: String,
-      siblings: Number,
-      familyType: String,
+    religion: { type: String },
+    caste: { type: String },
+    subCaste: { type: String },
+    gotra: { type: String },
+
+    // Step 3
+    educationDetails: { type: String },
+    employmentType: { type: String },
+    occupation: { type: String },
+    annualIncome: { type: String },
+
+    // Step 4
+    familyStatus: {
+      type: String,
+      enum: ["Middle class", "Upper middle class", "Rich / Affluent (Elite)"],
     },
-    lifestyle: {
-      diet: String,
-      drinking: String,
-      smoking: String,
+    diet: {
+      type: String,
+      enum: ["Veg", "Nonveg", "Occasionally Non-Veg", "Vegan"],
     },
+    aboutYourself: { type: String },
+
+    // Step 5
     photos: [String],
     introVideo: String,
-    bio: String,
+
+    // Optional
     aiBio: String,
-    preferences: {
-      ageRange: [Number],
-      location: [String],
-      community: [String],
-      education: [String],
-    },
     profileScore: { type: Number, default: 0 },
     isVisible: { type: Boolean, default: true },
-    createdAt: { type: Date, default: Date.now },
-    updatedAt: { type: Date, default: Date.now },
   },
-  { versionKey: false }
+  { timestamps: true, versionKey: false }
 );
 
 export default mongoose.model("Profile", profileSchema);
