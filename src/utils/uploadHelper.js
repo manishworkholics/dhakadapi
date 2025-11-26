@@ -33,30 +33,50 @@
 
 
 
+
 import multer from "multer";
 import path from "path";
 import fs from "fs";
 
-// temp storage before upload
+// Create absolute uploads folder path
+const uploadPath = path.join(process.cwd(), "uploads");
+
+// Ensure folder exists
+if (!fs.existsSync(uploadPath)) {
+  fs.mkdirSync(uploadPath, { recursive: true });
+}
+
+// Multer storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const folder = "uploads/";
-    if (!fs.existsSync(folder)) fs.mkdirSync(folder);
-    cb(null, folder);
+    cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
-    const unique = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, unique + path.extname(file.originalname));
+    const uniqueName = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueName + path.extname(file.originalname));
   },
 });
 
 export const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
 });
 
-// removed sharp — now this does nothing, safe fallback
+// No compression, return same file path
 export const compressImage = async (filePath) => {
-  return filePath; // no compression
+  return filePath;
 };
+
+// SAFE delete function
+export const deleteFile = (fileName) => {
+  const fullPath = path.join(uploadPath, fileName);
+
+  if (fs.existsSync(fullPath)) {
+    fs.unlinkSync(fullPath);
+    console.log("File Deleted:", fullPath);
+  } else {
+    console.log("File Not Found:", fullPath);
+  }
+};
+
 
