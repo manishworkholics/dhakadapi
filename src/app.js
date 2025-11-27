@@ -31,6 +31,12 @@ app.use("/api/admin", adminRoutes);
 import adminUserRoutes from "./modules/admin/admin.user.routes.js";
 app.use("/api/admin", adminUserRoutes);
 
+
+import uploadRoutes from "./modules/profile/upload.routes.js";
+
+app.use("/api", uploadRoutes);
+
+
 import adminProfileRoutes from "./modules/admin/admin.profile.routes.js";
 import adminDashboardRoutes from "./modules/admin/admin.dashboard.routes.js";
 

@@ -10,9 +10,11 @@ const profileSchema = new mongoose.Schema(
     },
 
     // Step 1
+    name: { type: String },
     dob: { type: Date },
     motherTongue: { type: String },
     email: { type: String },
+    location: { type: String },
 
     // Step 2
     height: { type: String },
