@@ -53,6 +53,18 @@ const profileSchema = new mongoose.Schema(
     aiBio: String,
     profileScore: { type: Number, default: 0 },
     isVisible: { type: Boolean, default: true },
+
+    featured: { type: Boolean, default: false },
+
+    // profile.model.js
+    viewedBy: [
+      {
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        viewedAt: { type: Date, default: Date.now }
+      }
+    ]
+
+
   },
   { timestamps: true, versionKey: false }
 );

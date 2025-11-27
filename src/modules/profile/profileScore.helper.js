@@ -1,0 +1,23 @@
+export const scoreFields = [
+  "name",
+  "dob",
+  "motherTongue",
+  "email",
+  "location",
+  "height",
+  "physicalStatus",
+  "maritalStatus",
+  "religion",
+  "caste",
+  "subCaste",
+  "gotra",
+  "educationDetails",
+  "employmentType",
+  "occupation",
+  "annualIncome",
+  "familyStatus",
+  "diet",
+  "aboutYourself",
+  "photos",
+  "introVideo"
+];

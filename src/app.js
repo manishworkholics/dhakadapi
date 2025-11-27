@@ -31,6 +31,15 @@ app.use("/api/admin", adminRoutes);
 import adminUserRoutes from "./modules/admin/admin.user.routes.js";
 app.use("/api/admin", adminUserRoutes);
 
+import interestRoutes from "./modules/profile/interest.routes.js";
+import featuredRoutes from "./modules/profile/featured.routes.js";
+import successRoutes from "./modules/profile/success.routes.js";
+
+app.use("/api/interest", interestRoutes);
+app.use("/api/featured", featuredRoutes);
+app.use("/api/success", successRoutes);
+
+
 
 import uploadRoutes from "./modules/profile/upload.routes.js";
 

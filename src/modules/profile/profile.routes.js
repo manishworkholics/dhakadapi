@@ -6,6 +6,7 @@ import {
   searchProfiles,
   getAllProfiles,
  getProfileById,
+ updateProfileScore,
 } from "./profile.controller.js";
 import { protect } from "../../middleware/authMiddleware.js";
 
@@ -17,6 +18,8 @@ router.get("/me", protect, getProfile);
 router.get("/search", protect, searchProfiles);
 router.get("/profiles", getAllProfiles);
 router.get("/:id", getProfileById);
+router.put("/update-score", protect, updateProfileScore);
+
 
 
 export default router;
