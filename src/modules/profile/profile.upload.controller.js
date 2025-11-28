@@ -64,33 +64,6 @@ export const uploadProfilePhoto = async (req, res) => {
   }
 };
 
-<<<<<<< HEAD
-// export const uploadImage = async (req, res) => {
-//   try {
-//     if (!req.file) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "No file uploaded",
-//       });
-//     }
-
-//     return res.status(200).json({
-//       success: true,
-//       message: "Image uploaded successfully",
-//       filePath: `/uploads/${req.file.filename}`,
-//     });
-//   } catch (error) {
-//     console.error(error);
-//     return res.status(500).json({
-//       success: false,
-//       message: "Something went wrong",
-//       error: error.message,
-//     });
-//   }
-// };
-
-=======
->>>>>>> 31c2d10740a7460754ef4c1d0b1231db569f16e7
 
 export const uploadIntroVideo = async (req, res) => {
   try {
