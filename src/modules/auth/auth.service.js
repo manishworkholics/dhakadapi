@@ -22,6 +22,24 @@ export const sendOtpService = async (phone) => {
   return { phone };
 };
 
+
+export const resendOtpService = async (phone) => {
+  const user = await User.findOne({ phone });
+  if (!user) throw new Error("User not found");
+
+  const otp = generateOTP();
+  const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
+
+  user.otp = otp;
+  user.otpExpiry = Date.now() + 5 * 60 * 1000; // 5 min
+  await user.save();
+
+  // Send SMS
+  // await sendSms(phone, `Your new OTP is: ${otp}`);
+
+  return { phone, otp };
+};
+
 // export const verifyOtpService = async (phone, otp) => {
 //   const user = await User.findOne({ phone });
 //   if (!user) throw new Error("User not found");
@@ -64,7 +82,7 @@ export const verifyOtpService = async (phone, otp) => {
 
 
 // Register new user
-export const registerUserService = async (name, email,phone,createdfor, password) => {
+export const registerUserService = async (name, email, phone, createdfor, password) => {
   const existing = await User.findOne({ email });
   if (existing) throw new Error("Email already registered");
 

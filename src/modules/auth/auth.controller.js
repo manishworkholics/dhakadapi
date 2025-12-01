@@ -1,4 +1,4 @@
-import { sendOtpService, verifyOtpService, registerUserService, emailLoginService, } from "./auth.service.js";
+import { sendOtpService, verifyOtpService, registerUserService, emailLoginService,resendOtpService } from "./auth.service.js";
 
 export const sendOtp = async (req, res) => {
   try {
@@ -34,6 +34,25 @@ export const verifyOtp = async (req, res) => {
     res.status(400).json({ success: false, message: error.message });
   }
 };
+
+
+export const resendOtp = async (req, res) => {
+  try {
+    const { phone } = req.body;
+    if (!phone) return res.status(400).json({ message: "Phone is required" });
+
+    const data = await resendOtpService(phone);
+
+    res.status(200).json({
+      success: true,
+      message: "OTP re-sent successfully",
+      data
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+};
+
 
 
 export const registerUser = async (req, res) => {
