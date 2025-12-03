@@ -194,38 +194,73 @@ export const getProfile = async (req, res) => {
 
 
 
+// // GET /api/profile/filters
+// export const getFilterOptions = async (req, res) => {
+//   const religions = await Profile.distinct("religion");
+//   const locations = await Profile.distinct("location");
+//   const education = await Profile.distinct("education");
+//   const occupations = await Profile.distinct("occupation");
+
+//   res.json({
+//     success: true,
+//     filters: { religions, locations, education, occupations }
+//   });
+// };
+
 // GET /api/profile/filters
 export const getFilterOptions = async (req, res) => {
-  const religions = await Profile.distinct("religion");
-  const locations = await Profile.distinct("location");
-  const education = await Profile.distinct("education");
-  const occupations = await Profile.distinct("occupation");
+  try {
+    const clean = (arr) => {
+      return [...new Set(
+        arr
+          .filter(v => v && v.trim() !== "") // remove null, empty, spaces
+          .map(v => v.trim())               // remove extra spaces
+      )];
+    };
 
-  res.json({
-    success: true,
-    filters: { religions, locations, education, occupations }
-  });
+    const religions = clean(await Profile.distinct("religion"));
+    const locations = clean(await Profile.distinct("location"));
+    const education = clean(await Profile.distinct("education"));
+    const occupations = clean(await Profile.distinct("occupation"));
+
+    res.json({
+      success: true,
+      filters: {
+        religions,
+        locations,
+        education,
+        occupations
+      }
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to load filter options",
+      error: err.message
+    });
+  }
 };
 
 
-// ⭐ GET PROFILE BY ID
-// export const getProfileById = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-
-//     const profile = await Profile.findById(id);
-//     if (!profile) {
-//       return res.status(404).json({ success: false, message: "Profile not found" });
-//     }
-
-//     res.status(200).json({ success: true, profile });
-
-//   } catch (error) {
-//     res.status(500).json({ success: false, message: error.message });
-//   }
-// };
 
 export const getProfileById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const profile = await Profile.findById(id);
+    if (!profile) {
+      return res.status(404).json({ success: false, message: "Profile not found" });
+    }
+
+    res.status(200).json({ success: true, profile });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getOwnProfileById = async (req, res) => {
   try {
     const { id } = req.params; // this is actually userId from session/auth
 

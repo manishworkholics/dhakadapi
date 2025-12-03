@@ -5,9 +5,10 @@ import {
   getProfile,
   searchProfiles,
   getAllProfiles,
- getProfileById,
- updateProfileScore,
-getFilterOptions
+  getProfileById,
+  updateProfileScore,
+  getFilterOptions,
+  getOwnProfileById
 } from "./profile.controller.js";
 import { protect } from "../../middleware/authMiddleware.js";
 
@@ -20,6 +21,7 @@ router.get("/search", protect, searchProfiles);
 router.get("/profiles", getAllProfiles);
 router.get("/filters", getFilterOptions);
 router.get("/:id", getProfileById);
+router.get("/own-profile/:id", getOwnProfileById);
 router.put("/update-score", protect, updateProfileScore);
 
 
