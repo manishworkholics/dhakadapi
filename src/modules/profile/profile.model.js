@@ -15,7 +15,7 @@ const profileSchema = new mongoose.Schema(
     motherTongue: { type: String },
     email: { type: String },
     location: { type: String },
-
+    gender: { type: String },
     // Step 2
     height: { type: String },
     physicalStatus: { type: String, enum: ["Normal", "Physically challenged"] },
