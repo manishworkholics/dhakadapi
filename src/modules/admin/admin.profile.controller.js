@@ -46,3 +46,54 @@ export const rejectProfile = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+
+
+// Get ALL profiles (Admin Access)
+export const getAllProfilesAdmin = async (req, res) => {
+  try {
+    const profiles = await Profile.find()
+      .populate("userId", "name email phone")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: profiles.length,
+      profiles,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+
+// Get Single Profile (Admin - Full Detail)
+export const getProfileDetailAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const profile = await Profile.findById(id)
+      .populate("userId", "name email phone");
+
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        message: "Profile not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      profile,
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};

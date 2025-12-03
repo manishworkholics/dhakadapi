@@ -22,23 +22,25 @@ export const sendOtpService = async (phone) => {
   return { phone };
 };
 
-// export const verifyOtpService = async (phone, otp) => {
-//   const user = await User.findOne({ phone });
-//   if (!user) throw new Error("User not found");
 
-//   const isExpired = user.otpExpiry < new Date();
-//   if (isExpired) throw new Error("OTP expired");
-//   if (user.otp !== otp) throw new Error("Invalid OTP");
+export const resendOtpService = async (phone) => {
+  const user = await User.findOne({ phone });
+  if (!user) throw new Error("User not found");
 
-//   user.isVerified = true;
-//   user.otp = null;
-//   user.otpExpiry = null;
-//   await user.save();
+  const otp = generateOTP();
+  const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
 
-//   const token = generateToken(user._id);
+  user.otp = otp;
+  user.otpExpiry = Date.now() + 5 * 60 * 1000; // 5 min
+  await user.save();
 
-//   return { user, token };
-// };
+  // Send SMS
+  // await sendSms(phone, `Your new OTP is: ${otp}`);
+
+  return { phone, otp };
+};
+
+
 
 export const verifyOtpService = async (phone, otp) => {
   const user = await User.findOne({ phone });
@@ -64,7 +66,7 @@ export const verifyOtpService = async (phone, otp) => {
 
 
 // Register new user
-export const registerUserService = async (name, email,phone,createdfor, password) => {
+export const registerUserService = async (name, email, phone, createdfor, password) => {
   const existing = await User.findOne({ email });
   if (existing) throw new Error("Email already registered");
 
@@ -82,17 +84,6 @@ export const registerUserService = async (name, email,phone,createdfor, password
   return { user, token };
 };
 
-// Email login
-// export const emailLoginService = async (email, password) => {
-//   const user = await User.findOne({ email });
-//   if (!user) throw new Error("Invalid credentials");
-
-//   const isMatch = await bcrypt.compare(password, user.password);
-//   if (!isMatch) throw new Error("Invalid credentials");
-
-//   const token = generateToken(user._id);
-//   return { user, token };
-// };
 
 
 export const emailLoginService = async (email, password) => {
@@ -110,3 +101,40 @@ export const emailLoginService = async (email, password) => {
   return { user, token };
 };
 
+
+export const emailOtpService = async (email) => {
+  const user = await User.findOne({ email });
+  if (!user) throw new Error("User not found");
+
+  const otp = generateOTP();
+
+  user.emailOtp = otp;
+  user.emailOtpExpires = Date.now() + 5 * 60 * 1000;
+  await user.save();
+
+  // await sendEmail(email, `Your verification OTP is: ${otp}`);
+
+  return otp;
+};
+
+
+export const verifyEmailOtpService = async (email, otp) => {
+  const user = await User.findOne({ email });
+  if (!user) throw new Error("User not found");
+
+  if (user.emailOtp !== otp || Date.now() > user.emailOtpExpires) {
+    throw new Error("Invalid or expired OTP");
+  }
+
+  user.emailVerified = true;
+  user.emailOtp = null;
+  user.emailOtpExpires = null;
+  await user.save();
+
+  const token = generateToken(user._id);
+  return { user, token };
+};
+
+export const resendEmailOtpService = async (email) => {
+  return await emailOtpService(email);
+};
