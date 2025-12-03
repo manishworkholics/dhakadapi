@@ -209,21 +209,39 @@ export const getFilterOptions = async (req, res) => {
 
 
 // ⭐ GET PROFILE BY ID
+// export const getProfileById = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+
+//     const profile = await Profile.findById(id);
+//     if (!profile) {
+//       return res.status(404).json({ success: false, message: "Profile not found" });
+//     }
+
+//     res.status(200).json({ success: true, profile });
+
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
 export const getProfileById = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params; // this is actually userId from session/auth
 
-    const profile = await Profile.findById(id);
+    // Find profile by userId field, not _id
+    const profile = await Profile.findOne({ userId: id });
+
     if (!profile) {
       return res.status(404).json({ success: false, message: "Profile not found" });
     }
 
     res.status(200).json({ success: true, profile });
-
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 
 // ⭐ SEARCH PROFILES (Filter, Sort, Pagination)
