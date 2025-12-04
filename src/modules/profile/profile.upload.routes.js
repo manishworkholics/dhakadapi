@@ -4,6 +4,7 @@ import { protect } from "../../middleware/authMiddleware.js";
 import {
   uploadProfilePhoto,
   uploadIntroVideo,
+  uploadImage,
 } from "./profile.upload.controller.js";
 
 const router = express.Router();
