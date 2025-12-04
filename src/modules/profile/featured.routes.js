@@ -5,7 +5,7 @@ import { protect } from "../../middleware/authMiddleware.js";
 const router = express.Router();
 
 router.get("/", getFeaturedProfiles);        // public: list featured
-router.post("/mark", protect, markFeatured);    // admin: body { profileId }
-router.post("/unmark", protect, unmarkFeatured);
+router.post("/mark",  markFeatured);    // admin: body { profileId }
+router.post("/unmark", unmarkFeatured);
 
 export default router;
