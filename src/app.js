@@ -35,12 +35,16 @@ import interestRoutes from "./modules/profile/interest.routes.js";
 import featuredRoutes from "./modules/profile/featured.routes.js";
 import successRoutes from "./modules/profile/success.routes.js";
 import viewedRoutes from "./modules/profile/profileview.routes.js";
+import sendinterestRoutes from "./modules/intrest/intrest.routes.js";
+import shortlistRoutes from "./modules/shortlist/shortlist.routes.js";
 
-app.use("/api/interest", interestRoutes);
+app.use("/api/interestssss", interestRoutes);
 app.use("/api/featured", featuredRoutes);
 app.use("/api/success", successRoutes);
 app.use("/api/viewed", viewedRoutes);
-
+app.use("/api/viewed", viewedRoutes);
+app.use("/api/interest", sendinterestRoutes);
+app.use("/api/shortlist", shortlistRoutes);
 
 
 import uploadRoutes from "./modules/profile/upload.routes.js";

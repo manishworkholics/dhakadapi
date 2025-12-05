@@ -3,8 +3,8 @@ import { upload } from "../../utils/uploadHelper.js";
 import { protect } from "../../middleware/authMiddleware.js";
 import {
   uploadProfilePhoto,
-  uploadIntroVideo,
-  uploadImage,
+  uploadIntroVideo
+ 
 } from "./profile.upload.controller.js";
 
 const router = express.Router();
