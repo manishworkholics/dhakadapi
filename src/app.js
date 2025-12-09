@@ -54,9 +54,11 @@ app.use("/api", uploadRoutes);
 
 import adminProfileRoutes from "./modules/admin/admin.profile.routes.js";
 import adminDashboardRoutes from "./modules/admin/admin.dashboard.routes.js";
+import locationRoutes from "./modules/location/location.routes.js";
 
 app.use("/api/admin", adminProfileRoutes);
 app.use("/api/admin", adminDashboardRoutes);
+app.use("/api/location", locationRoutes);
 
 
 

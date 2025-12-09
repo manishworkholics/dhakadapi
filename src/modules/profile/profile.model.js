@@ -44,7 +44,7 @@ const profileSchema = new mongoose.Schema(
       enum: ["Veg", "Nonveg", "Occasionally Non-Veg", "Vegan"],
     },
     aboutYourself: { type: String },
-
+    hobbies: { type: String },
     // Step 5
     photos: [String],
     introVideo: String,
