@@ -1,8 +1,52 @@
 import User from "./auth.model.js";
 import bcrypt from "bcrypt";
 import { generateToken } from "../../utils/jwtHelper.js";
+import { sendSMS } from "../../utils/sendOtp.js";
+
+// const generateOTP = () => Math.floor(1000 + Math.random() * 9000);
+
+// export const sendOtpService = async (phone) => {
+//   const otp = generateOTP();
+//   const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
+
+//   let user = await User.findOne({ phone });
+
+//   if (!user) {
+//     user = await User.create({ phone, otp, otpExpiry });
+//   } else {
+//     user.otp = otp;
+//     user.otpExpiry = otpExpiry;
+//     await user.save();
+//   }
+
+//   console.log(`📲 OTP sent to ${phone}: ${otp}`);
+//   return { phone };
+// };
+
 
 const generateOTP = () => Math.floor(1000 + Math.random() * 9000);
+
+// export const sendOtpService = async (phone) => {
+//   const otp = generateOTP();
+//   const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
+
+//   let user = await User.findOne({ phone });
+
+//   if (!user) {
+//     user = await User.create({ phone, otp, otpExpiry });
+//   } else {
+//     user.otp = otp;
+//     user.otpExpiry = otpExpiry;
+//     await user.save();
+//   }
+
+//   const message = `Your OTP is ${otp}. Valid for 5 minutes.`;
+
+//   await sendSMS(phone, message);
+
+//   return { phone };
+// };
+
 
 export const sendOtpService = async (phone) => {
   const otp = generateOTP();
@@ -18,8 +62,21 @@ export const sendOtpService = async (phone) => {
     await user.save();
   }
 
-  console.log(`📲 OTP sent to ${phone}: ${otp}`);
-  return { phone };
+  try {
+    const smsResponse = await sendSMS(phone, `Your OTP is ${otp}`);
+
+    return {
+      phone,
+      smsStatus: "SENT",
+      smsResponse, // 👈 TEMP DEBUG
+    };
+  } catch (err) {
+    return {
+      phone,
+      smsStatus: "FAILED",
+      error: err.message,
+    };
+  }
 };
 
 
