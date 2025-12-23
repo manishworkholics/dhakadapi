@@ -23,7 +23,7 @@ export const getOrCreateChatRoom = async (req, res) => {
   }
 };
 
-export const getChatList = async (req, res) => {
+export const getChatListss = async (req, res) => {
   try {
     const userId = req.user._id;
 
@@ -42,6 +42,170 @@ export const getChatList = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+export const getChatList = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    let chats = await ChatRoom.find({
+      participants: userId,
+    })
+      .populate("participants", "name")
+      .populate({
+        path: "lastMessage",
+        populate: { path: "sender", select: "name" },
+      })
+      .sort({ updatedAt: -1 })
+      .lean(); // IMPORTANT
+
+    // collect participant userIds
+    const userIds = chats.flatMap(chat =>
+      chat.participants.map(p => p._id)
+    );
+
+    // fetch profiles
+    const profiles = await Profile.find(
+      { userId: { $in: userIds } },
+      { userId: 1, photos: 1 }
+    ).lean();
+
+    // map profiles by userId
+    const profileMap = {};
+    profiles.forEach(p => {
+      profileMap[p.userId.toString()] = p;
+    });
+
+    // attach photo to participants
+    chats = chats.map(chat => ({
+      ...chat,
+      participants: chat.participants.map(p => ({
+        _id: p._id,
+        name: p.name,
+        photo: profileMap[p._id.toString()]?.photos?.[0] || null,
+      })),
+    }));
+
+    res.json({ success: true, chats });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const getChatListssss = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const chats = await ChatRoom.aggregate([
+      { $match: { participants: userId } },
+
+      // 🔹 populate participants (users)
+      {
+        $lookup: {
+          from: "users",
+          localField: "participants",
+          foreignField: "_id",
+          as: "participants",
+        },
+      },
+
+      // 🔹 populate profiles
+      {
+        $lookup: {
+          from: "profiles",
+          localField: "participants._id",
+          foreignField: "userId",
+          as: "profiles",
+        },
+      },
+
+      // 🔹 populate lastMessage
+      {
+        $lookup: {
+          from: "chatmessages",
+          localField: "lastMessage",
+          foreignField: "_id",
+          as: "lastMessage",
+        },
+      },
+      {
+        $unwind: {
+          path: "$lastMessage",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
+      // 🔹 populate lastMessage.sender
+      {
+        $lookup: {
+          from: "users",
+          localField: "lastMessage.sender",
+          foreignField: "_id",
+          as: "lastMessage.sender",
+        },
+      },
+      {
+        $unwind: {
+          path: "$lastMessage.sender",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
+      // 🔹 merge photo into participants
+      {
+        $addFields: {
+          participants: {
+            $map: {
+              input: "$participants",
+              as: "user",
+              in: {
+                _id: "$$user._id",
+                name: "$$user.name",
+                photo: {
+                  $let: {
+                    vars: {
+                      profile: {
+                        $arrayElemAt: [
+                          {
+                            $filter: {
+                              input: "$profiles",
+                              as: "p",
+                              cond: {
+                                $eq: ["$$p.userId", "$$user._id"],
+                              },
+                            },
+                          },
+                          0,
+                        ],
+                      },
+                    },
+                    in: { $arrayElemAt: ["$$profile.photos", 0] },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+
+      { $sort: { updatedAt: -1 } },
+
+      // 🔹 keep response EXACTLY SAME
+      {
+        $project: {
+          participants: 1,
+          lastMessage: 1,
+          createdAt: 1,
+          updatedAt: 1,
+        },
+      },
+    ]);
+
+    res.json({ success: true, chats });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 
 
 
@@ -192,7 +356,26 @@ export const markMessagesAsSeen = async (req, res) => {
     const userId = req.user._id;
     const { chatRoomId } = req.params;
 
-    await Message.updateMany(
+    const room = await ChatRoom.findById(chatRoomId);
+    if (!room) {
+      return res.status(404).json({
+        success: false,
+        message: "Chat room not found",
+      });
+    }
+
+    const isParticipant = room.participants.some(
+      (id) => id.toString() === userId.toString()
+    );
+
+    if (!isParticipant) {
+      return res.status(403).json({
+        success: false,
+        message: "Not allowed",
+      });
+    }
+
+    await ChatMessage.updateMany(
       {
         chatRoom: chatRoomId,
         sender: { $ne: userId },
@@ -204,7 +387,6 @@ export const markMessagesAsSeen = async (req, res) => {
     );
 
     res.json({ success: true, message: "Messages marked as seen" });
-
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
