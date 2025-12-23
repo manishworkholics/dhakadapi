@@ -1,5 +1,5 @@
 import ChatRoom from "../chat/ChatRoom.model.js";
-import ChatMessage from "../chat/chatMessage.model.js";
+import ChatMessage from "../chat/Message.model.js";
 import Profile from "../profile/profile.model.js"
 
 export const getOrCreateChatRoom = async (req, res) => {
@@ -76,7 +76,6 @@ export const getMessages = async (req, res) => {
 };
 
 
-
 export const sendMessage = async (req, res) => {
   try {
     const senderId = req.user._id;
@@ -89,7 +88,6 @@ export const sendMessage = async (req, res) => {
       });
     }
 
-    // Check room exists
     const room = await ChatRoom.findById(chatRoomId);
     if (!room) {
       return res.status(404).json({
@@ -98,15 +96,17 @@ export const sendMessage = async (req, res) => {
       });
     }
 
-    // Check sender is participant
-    if (!room.participants.includes(senderId)) {
+    const isParticipant = room.participants.some(
+      (id) => id.toString() === senderId.toString()
+    );
+
+    if (!isParticipant) {
       return res.status(403).json({
         success: false,
         message: "You are not allowed to send message in this room",
       });
     }
 
-    // Create message
     const newMessage = await ChatMessage.create({
       chatRoom: chatRoomId,
       sender: senderId,
@@ -114,13 +114,12 @@ export const sendMessage = async (req, res) => {
       seenBy: [senderId],
     });
 
-    // Update last message in room
-    room.lastMessage = newMessage._id;
-    await room.save();
+    await ChatRoom.findByIdAndUpdate(chatRoomId, {
+      lastMessage: newMessage._id,
+    });
 
     res.status(201).json({
       success: true,
-      message: "Message sent",
       data: newMessage,
     });
   } catch (err) {
@@ -130,6 +129,7 @@ export const sendMessage = async (req, res) => {
     });
   }
 };
+
 
 
 
