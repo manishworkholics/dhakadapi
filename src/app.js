@@ -65,6 +65,10 @@ app.use("/api/admin", adminDashboardRoutes);
 import locationRoutes from "./modules/location/location.routes.js";
 app.use("/api/location", locationRoutes);
 
+
+import planRoutes from "./modules/plan/plan.routes.js";
+app.use("/api/plan", planRoutes);
+
 import chatRoutes from "./modules/chat/chat.routes.js";
 import chatSocket from "./modules/chat/chat.socket.js";
 app.use("/api/chat", chatRoutes);

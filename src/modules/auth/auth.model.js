@@ -14,7 +14,12 @@ const userSchema = new mongoose.Schema(
     emailOtp: String,
     emailOtpExpires: Date,
     emailVerified: { type: Boolean, default: false },
-
+    currentPlan: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "UserPlan",
+      default: null,
+    }
+    ,
     createdAt: { type: Date, default: Date.now },
   },
   { versionKey: false }
