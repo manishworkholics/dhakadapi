@@ -2,6 +2,66 @@ import ChatRoom from "../chat/ChatRoom.model.js";
 import ChatMessage from "../chat/Message.model.js";
 import Profile from "../profile/profile.model.js"
 
+
+export const chatNow = async (req, res) => {
+  try {
+    const senderId = req.user._id;
+    const { receiverId } = req.body;
+
+    if (!receiverId) {
+      return res.status(400).json({
+        success: false,
+        message: "Receiver ID is required",
+      });
+    }
+
+    // ❌ Prevent self chat
+    if (senderId.toString() === receiverId.toString()) {
+      return res.status(400).json({
+        success: false,
+        message: "You cannot chat with yourself",
+      });
+    }
+
+    // 🔍 Check existing chat (active OR pending)
+    const existingChat = await ChatRoom.findOne({
+      participants: { $all: [senderId, receiverId] },
+      status: { $ne: "rejected" },
+    });
+
+    if (existingChat) {
+      return res.json({
+        success: true,
+        chat: existingChat,
+        message:
+          existingChat.status === "pending"
+            ? "Chat request already sent"
+            : "Chat already exists",
+      });
+    }
+
+    // ✅ Create pending chat request
+    const chatRoom = await ChatRoom.create({
+      participants: [senderId, receiverId],
+      requestedBy: senderId, // 🔥 VERY IMPORTANT
+      status: "pending",     // pending | active | rejected
+    });
+
+    res.json({
+      success: true,
+      chat: chatRoom,
+      message: "Chat request sent successfully",
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+
+
 export const getOrCreateChatRoom = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -245,6 +305,15 @@ export const sendMessage = async (req, res) => {
     const senderId = req.user._id;
     const { chatRoomId, message } = req.body;
 
+    const chat = await ChatRoom.findById(chatRoomId);
+
+    if (!chat || chat.status !== "active") {
+      return res.status(403).json({
+        success: false,
+        message: "Chat not active yet",
+      });
+    }
+
     if (!chatRoomId || !message) {
       return res.status(400).json({
         success: false,
@@ -389,5 +458,93 @@ export const markMessagesAsSeen = async (req, res) => {
     res.json({ success: true, message: "Messages marked as seen" });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const getChatRequests = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const requests = await ChatRoom.find({
+      participants: userId,
+      requestedBy: { $ne: userId }, // ❗ receiver side only
+      status: "pending",
+    })
+      .populate("participants", "name")
+      .populate("requestedBy", "name")
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      requests,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+
+export const respondToChatRequest = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { chatRoomId, action } = req.body; // action = "accept" | "reject"
+
+    if (!chatRoomId || !action) {
+      return res.status(400).json({
+        success: false,
+        message: "chatRoomId and action are required",
+      });
+    }
+
+    const chatRoom = await ChatRoom.findById(chatRoomId);
+
+    if (!chatRoom) {
+      return res.status(404).json({
+        success: false,
+        message: "Chat room not found",
+      });
+    }
+
+    // 🔒 Only receiver can accept/reject
+    if (chatRoom.requestedBy.toString() === userId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "You cannot respond to your own chat request",
+      });
+    }
+
+    if (chatRoom.status !== "pending") {
+      return res.status(400).json({
+        success: false,
+        message: "Chat request already handled",
+      });
+    }
+
+    if (action === "accept") {
+      chatRoom.status = "active";
+    }
+
+    if (action === "reject") {
+      chatRoom.status = "rejected";
+    }
+
+    await chatRoom.save();
+
+    res.json({
+      success: true,
+      message:
+        action === "accept"
+          ? "Chat request accepted"
+          : "Chat request rejected",
+      chat: chatRoom,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };
