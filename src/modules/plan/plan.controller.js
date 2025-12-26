@@ -125,6 +125,83 @@ export const getPlans = async (req, res) => {
 };
 
 
+
+// ====================== Update Plan ======================
+export const updatePlan = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updateData = req.body;
+
+        const updatedPlan = await Plan.findByIdAndUpdate(id, updateData, { new: true });
+
+        if (!updatedPlan) {
+            return res.status(404).json({
+                success: false,
+                message: "Plan not found",
+            });
+        }
+
+        return res.json({
+            success: true,
+            message: "Plan updated successfully",
+            plan: updatedPlan,
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            success: false,
+            message: "Something went wrong while updating plan",
+        });
+    }
+};
+
+// ====================== Delete Plan ======================
+export const deletePlan = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const deletedPlan = await Plan.findByIdAndDelete(id);
+
+        if (!deletedPlan) {
+            return res.status(404).json({
+                success: false,
+                message: "Plan not found",
+            });
+        }
+
+        return res.json({
+            success: true,
+            message: "Plan deleted successfully",
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            success: false,
+            message: "Something went wrong while deleting plan",
+        });
+    }
+};
+
+
+export const getAllPaymentHistory = async (req, res) => {
+    const plans = await Payment.find({ isActive: true }).sort({ price: 1 });
+    res.json({ success: true, plans });
+};
+
+export const getPaymentHistory = async (req, res) => {
+    try {
+        const userId = req.user._id;
+
+        const history = await Payment.find({ user: userId })
+            .sort({ createdAt: -1 });
+
+        res.json({ success: true, history });
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+};
+
 export const buyPlan = async (req, res) => {
     try {
         const userId = req.user._id;

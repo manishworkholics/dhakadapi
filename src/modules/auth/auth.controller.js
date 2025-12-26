@@ -1,4 +1,7 @@
 import { sendOtpService, verifyOtpService, registerUserService, emailLoginService, resendOtpService, verifyEmailOtpService, resendEmailOtpService, emailOtpService } from "./auth.service.js";
+import User from "./auth.model.js";
+import { sendSMS, sendMail } from "../../utils/sendOtp.js";
+import bcrypt from "bcrypt";
 
 export const sendOtp = async (req, res) => {
   try {
@@ -76,24 +79,48 @@ export const registerUser = async (req, res) => {
 };
 
 
-
-
 export const emailLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password)
       return res.status(400).json({ message: "Email and password required" });
 
-    const { user } = await emailLoginService(email, password);
+    const { user, token } = await emailLoginService(email, password);
 
-    // Send verification OTP to email
-    const otp = await emailOtpService(email);
+    if (!user) return res.status(400).json({ success: false, message: "Invalid credentials" });
 
-    res.status(200).json({
+    // ⛔ If email NOT verified → Send OTP FIRST
+    if (!user.emailVerified) {
+      const otp = await emailOtpService(email);
+
+      return res.status(200).json({
+        success: true,
+        requiresVerification: true,
+        message: "OTP sent to email for verification.",
+        user: {
+          _id: user._id,
+          phone: user.phone,
+          email: user.email,
+          name: user.name,
+          isVerified: user.isVerified,
+        },
+        debugOtp: otp,  // ⚠ only for testing
+      });
+    }
+
+    // 🎉 Email already verified → Direct Login
+    return res.status(200).json({
       success: true,
-      message: "Login successful. OTP sent to email for verification.",
-      user: { id: user._id, name: user.name, email: user.email },
-      debugOtp: otp // ⚠ Only during testing, remove before production
+      requiresVerification: false,
+      message: "Login successful",
+      token,
+      user: {
+        _id: user._id,
+        phone: user.phone,
+        email: user.email,
+        name: user.name,
+        isVerified: user.isVerified,
+      }
     });
 
   } catch (err) {
@@ -141,6 +168,108 @@ export const resendEmailOtp = async (req, res) => {
       success: true,
       message: "OTP re-sent to email",
       debugOtp: otp // remove in production
+    });
+
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+};
+
+
+
+
+// forget password code 
+
+
+
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: "Email is required" });
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User Not Found" });
+    const generateOTP = () => Math.floor(1000 + Math.random() * 9000);
+    const otp = generateOTP();
+    user.resetOtp = otp;
+    user.resetOtpExpires = Date.now() + 5 * 60 * 1000; // 5 min
+    await user.save();
+
+    await sendMail({
+      email,
+      subject: "Reset Password - Dhakad Matrimony",
+      message: `
+      <h2 style="color:#D4AF37;">Dhakad Matrimony</h2>
+      <p>Your OTP for resetting password is:</p>
+      <h1>${otp}</h1>
+      <p>Valid for 5 minutes</p>
+      `
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "OTP sent for password reset",
+      debugOtp: otp
+    });
+
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+};
+
+export const verifyForgotOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp)
+      return res.status(400).json({ message: "Email & OTP required" });
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User Not Found" });
+
+    if (user.resetOtp !== otp)
+      return res.status(400).json({ success: false, message: "Invalid OTP" });
+
+    if (user.resetOtpExpires < Date.now())
+      return res.status(400).json({ success: false, message: "OTP expired" });
+
+    // mark verified -> allow reset password
+    user.resetOtpVerified = true;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "OTP Verified! Now set new password"
+    });
+
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+};
+
+
+export const resetPassword = async (req, res) => {
+  try {
+    const { email, newPassword } = req.body;
+    if (!email || !newPassword)
+      return res.status(400).json({ message: "Email & new password required" });
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User Not Found" });
+
+    if (!user.resetOtpVerified)
+      return res.status(403).json({ message: "OTP not verified" });
+
+    user.password = await bcrypt.hash(newPassword, 10);
+
+    // clear fields
+    user.resetOtp = undefined;
+    user.resetOtpExpires = undefined;
+    user.resetOtpVerified = false;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset successful, now login"
     });
 
   } catch (err) {

@@ -1,52 +1,9 @@
 import User from "./auth.model.js";
 import bcrypt from "bcrypt";
 import { generateToken } from "../../utils/jwtHelper.js";
-import { sendSMS } from "../../utils/sendOtp.js";
-
-// const generateOTP = () => Math.floor(1000 + Math.random() * 9000);
-
-// export const sendOtpService = async (phone) => {
-//   const otp = generateOTP();
-//   const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
-
-//   let user = await User.findOne({ phone });
-
-//   if (!user) {
-//     user = await User.create({ phone, otp, otpExpiry });
-//   } else {
-//     user.otp = otp;
-//     user.otpExpiry = otpExpiry;
-//     await user.save();
-//   }
-
-//   console.log(`📲 OTP sent to ${phone}: ${otp}`);
-//   return { phone };
-// };
-
+import { sendSMS, sendMail } from "../../utils/sendOtp.js";
 
 const generateOTP = () => Math.floor(1000 + Math.random() * 9000);
-
-// export const sendOtpService = async (phone) => {
-//   const otp = generateOTP();
-//   const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
-
-//   let user = await User.findOne({ phone });
-
-//   if (!user) {
-//     user = await User.create({ phone, otp, otpExpiry });
-//   } else {
-//     user.otp = otp;
-//     user.otpExpiry = otpExpiry;
-//     await user.save();
-//   }
-
-//   const message = `Your OTP is ${otp}. Valid for 5 minutes.`;
-
-//   await sendSMS(phone, message);
-
-//   return { phone };
-// };
-
 
 export const sendOtpService = async (phone) => {
   const otp = generateOTP();
@@ -169,7 +126,73 @@ export const emailOtpService = async (email) => {
   user.emailOtpExpires = Date.now() + 5 * 60 * 1000;
   await user.save();
 
-  // await sendEmail(email, `Your verification OTP is: ${otp}`);
+  const htmlTemplate = `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Dhakad Matrimony - Email Verification</title>
+  </head>
+  <body style="background-color: #f5f5f5; padding: 0; margin: 0; font-family: Arial, sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td align="center">
+          <table width="600" cellpadding="0" cellspacing="0" style="background: white; margin-top: 20px; border-radius: 10px; padding: 30px; box-shadow: 0px 3px 8px rgba(0,0,0,0.1);">
+            
+            <tr>
+              <td align="center">
+                <h2 style="color: #D4AF37; font-size: 28px; margin: 0;">Dhakad Matrimony</h2>
+                <p style="color: #888; font-size: 14px; margin-top: 5px;">Connecting Hearts, Creating Futures ❤️</p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding: 20px 0;">
+                <p style="font-size: 16px; color: #333; margin-bottom: 15px;">
+                  Hi <strong>${user.name || "User"}</strong>,
+                </p>
+                <p style="font-size: 15px; color: #555;">
+                  Thank you for choosing <strong>Dhakad Matrimony</strong>.  
+                  To verify your email and secure your account, please use the OTP below:
+                </p>
+
+                <div style="text-align: center; margin: 25px auto;">
+                  <span style="display: inline-block; padding: 15px 30px; background: #D4AF37; color: white; font-size: 26px; letter-spacing: 5px; border-radius: 8px;">
+                    <strong>${otp}</strong>
+                  </span>
+                </div>
+
+                <p style="font-size: 14px; color: #777; text-align: center;">
+                  This OTP will expire in <strong>5 minutes</strong>.  
+                </p>
+
+                <p style="font-size: 14px; color: #888; margin-top: 25px;">
+                  If you didn't request this, please ignore this email.
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td align="center" style="padding-top: 25px; border-top: 1px solid #eee;">
+                <p style="font-size: 12px; color: #999;">
+                  © ${new Date().getFullYear()} Dhakad Matrimony. All Rights Reserved.
+                </p>
+              </td>
+            </tr>
+
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+  </html>
+  `;
+
+  await sendMail({
+    email,
+    subject: "Your Dhakad Matrimony – Email Verification OTP",
+    message: htmlTemplate,
+  });
 
   return otp;
 };
