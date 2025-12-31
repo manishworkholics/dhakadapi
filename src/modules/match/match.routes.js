@@ -1,12 +1,12 @@
 // routes/match.routes.js
 import express from "express";
-import auth from "../middlewares/auth.js";
-import { getNewMatches, addProfileView, getViewedProfiles } from "./match.controller.js";
+import { protect } from "../../middleware/authMiddleware.js";
+import { getMatches } from "./match.controller.js";
 
 const router = express.Router();
 
-router.get("/new-matches", auth, getNewMatches);
-router.post("/view/:id", auth, addProfileView);
-router.get("/viewed", auth, getViewedProfiles);
+router.get("/new-matches", protect, getMatches);
+
+
 
 export default router;

@@ -76,6 +76,13 @@ app.use("/api/contact", contactRoutes);
 import chatRoutes from "./modules/chat/chat.routes.js";
 app.use("/api/chat", chatRoutes);
 
+
+import PartnerPreferenceRoutes from "./modules/match/partnerPreference.routes.js";
+app.use("/api/partner-preference", PartnerPreferenceRoutes);
+
+import MatchesRoutes from "./modules/match/match.routes.js";
+app.use("/api/matches", MatchesRoutes);
+
 import chatSocket from "./modules/chat/chat.socket.js";
 
 const server = http.createServer(app);
