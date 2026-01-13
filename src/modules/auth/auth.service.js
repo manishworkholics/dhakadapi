@@ -198,22 +198,54 @@ export const emailOtpService = async (email) => {
 };
 
 
+// export const verifyEmailOtpService = async (email, otp) => {
+//   const user = await User.findOne({ email });
+//   if (!user) throw new Error("User not found");
+
+//   if (user.emailOtp !== otp || Date.now() > user.emailOtpExpires) {
+//     throw new Error("Invalid or expired OTP");
+//   }
+
+//   user.emailVerified = true;
+//   user.emailOtp = null;
+//   user.emailOtpExpires = null;
+//   await user.save();
+
+//   const token = generateToken(user._id);
+//   return { user, token };
+// };
+
+
 export const verifyEmailOtpService = async (email, otp) => {
   const user = await User.findOne({ email });
-  if (!user) throw new Error("User not found");
-
-  if (user.emailOtp !== otp || Date.now() > user.emailOtpExpires) {
-    throw new Error("Invalid or expired OTP");
+  if (!user) {
+    throw new Error("User not found");
   }
 
+  if (!user.emailOtp || !user.emailOtpExpires) {
+    throw new Error("No OTP request found");
+  }
+
+  if (Date.now() > user.emailOtpExpires) {
+    throw new Error("OTP expired");
+  }
+
+  if (String(user.emailOtp) !== String(otp)) {
+    throw new Error("Invalid OTP");
+  }
+
+  // ✅ mark verified
   user.emailVerified = true;
   user.emailOtp = null;
   user.emailOtpExpires = null;
+
   await user.save();
 
   const token = generateToken(user._id);
+
   return { user, token };
 };
+
 
 export const resendEmailOtpService = async (email) => {
   return await emailOtpService(email);

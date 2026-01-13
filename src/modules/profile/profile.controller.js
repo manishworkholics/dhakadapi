@@ -261,3 +261,68 @@ export const getAllProfiles = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+
+// ⭐ GET RELATED PROFILES
+export const getRelatedProfiles = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // Get own profile first
+    const myProfile = await Profile.findOne({ userId });
+    if (!myProfile) {
+      return res.status(404).json({
+        success: false,
+        message: "User profile not found"
+      });
+    }
+
+    const {
+      gender,
+      religion,
+      location,
+      dob
+    } = myProfile;
+
+    // 🎯 Age range ±5 years
+    const today = new Date();
+    const age = today.getFullYear() - new Date(dob).getFullYear();
+
+    const minDOB = new Date(today.setFullYear(today.getFullYear() - (age + 5)));
+    const maxDOB = new Date(new Date().setFullYear(new Date().getFullYear() - (age - 5)));
+
+    const relatedProfiles = await Profile.find({
+      isVisible: true,
+
+      // ❌ Exclude own profile
+      userId: { $ne: userId },
+
+      // ❌ Opposite gender
+      gender: { $ne: gender },
+
+      // ✅ Similar preferences
+      religion,
+      location,
+
+      // 🎯 Age range
+      dob: {
+        $gte: minDOB,
+        $lte: maxDOB
+      }
+    })
+      .sort({ profileScore: -1, createdAt: -1 })
+      .limit(10);
+
+    res.status(200).json({
+      success: true,
+      results: relatedProfiles.length,
+      profiles: relatedProfiles
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};

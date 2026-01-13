@@ -9,40 +9,54 @@ import crypto from "crypto";
 export const createOrder = async (req, res) => {
     try {
         const { planId } = req.body;
-        const userId = req.user._id;
+
+        if (!req.user) {
+            return res.status(401).json({ success: false, message: "Unauthorized" });
+        }
 
         const plan = await Plan.findById(planId);
         if (!plan) {
             return res.status(404).json({ success: false, message: "Plan not found" });
         }
 
-        const gstAmount = (plan.price * plan.gstPercent) / 100;
-        const totalAmount = plan.price + gstAmount;
+        const price = Number(plan.price);
+        const gstPercent = Number(plan.gstPercent || 0);
+
+        const gstAmount = (price * gstPercent) / 100;
+        const totalAmount = price + gstAmount;
 
         const order = await razorpay.orders.create({
-            amount: Math.round(totalAmount * 100), // paise
+            amount: Math.round(totalAmount * 100),
             currency: "INR",
             receipt: `rcpt_${Date.now()}`,
         });
 
         await Payment.create({
-            user: userId,
+            user: req.user._id,
             plan: plan._id,
             razorpayOrderId: order.id,
             amount: totalAmount,
             status: "created",
         });
 
-        res.json({
+        return res.json({
             success: true,
-            order,
-            key: process.env.RAZORPAY_KEY_ID,
+            orderId: order.id,
             amount: totalAmount,
+            key: process.env.RAZORPAY_KEY_ID,
         });
+
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        console.error("Create Order Error:", err);
+        return res.status(500).json({
+            success: false,
+            message: err.message,
+        });
     }
 };
+
+
+
 
 export const verifyPayment = async (req, res) => {
     try {
@@ -189,18 +203,20 @@ export const getAllPaymentHistory = async (req, res) => {
 };
 
 export const getPaymentHistory = async (req, res) => {
-    try {
-        const userId = req.user._id;
+  try {
+    const userId = req.user._id;
 
-        const history = await Payment.find({ user: userId })
-            .sort({ createdAt: -1 });
+    const history = await Payment.find({ user: userId })
+      .populate("plan", "name")   // 👈 populate plan name
+      .sort({ createdAt: -1 });
 
-        res.json({ success: true, history });
-    } catch (err) {
-        console.log(err);
-        res.status(500).json({ success: false, message: "Server error" });
-    }
+    res.json({ success: true, history });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
 };
+
 
 export const buyPlan = async (req, res) => {
     try {
