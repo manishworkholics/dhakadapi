@@ -93,13 +93,41 @@ const io = new Server(server, {
   },
 });
 
-chatSocket(io);
+// chatSocket(io);
 
-export { io };
+// export { io };
+
+const onlineUsers = new Map(); // userId -> socketId
+
+io.on("connection", (socket) => {
+  console.log("Socket connected:", socket.id);
+
+  socket.on("join", (userId) => {
+    onlineUsers.set(userId, socket.id);
+    socket.userId = userId;
+  });
+
+  socket.on("sendMessage", async (data) => {
+    const { chatRoomId, senderId, receiverId, message } = data;
+
+    // Emit to receiver if online
+    const receiverSocket = onlineUsers.get(receiverId);
+    if (receiverSocket) {
+      io.to(receiverSocket).emit("receiveMessage", data);
+    }
+  });
+
+  socket.on("disconnect", () => {
+    if (socket.userId) {
+      onlineUsers.delete(socket.userId);
+    }
+  });
+});
 
 
 app.get("/", (req, res) => {
   res.send("Dhakad Matrimony API is running...");
 });
 
-export default app;
+export { app, server };
+

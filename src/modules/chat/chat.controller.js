@@ -347,6 +347,8 @@ export const sendMessage = async (req, res) => {
       seenBy: [senderId],
     });
 
+    req.io?.emit("newMessage", newMessage);
+
     await ChatRoom.findByIdAndUpdate(chatRoomId, {
       lastMessage: newMessage._id,
     });

@@ -196,6 +196,7 @@ export const updateProfileScore = async (req, res) => {
 export const getAllProfiles = async (req, res) => {
   try {
     let {
+      userId,
       gender,
       religion,
       location,
@@ -211,6 +212,9 @@ export const getAllProfiles = async (req, res) => {
 
     const skip = (page - 1) * limit;
     const query = { isVisible: true };
+    if (userId) {
+      query.userId = { $ne: userId };   // or userId field depending on schema
+    }
 
     if (gender) query.gender = gender;
     if (religion) query.religion = religion;
