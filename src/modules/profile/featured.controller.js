@@ -4,15 +4,38 @@ import {
   unmarkFeaturedService,
 } from "./featured.service.js";
 import { getOppositeGender } from "../../utils/gender.util.js";
+import Profile from "../profile/profile.model.js";
 
 export const getFeaturedProfiles = async (req, res) => {
   try {
-    const limit = req.query.limit || 10;
+    const limit = parseInt(req.query.limit) || 10;
+
+    const userId = req.user._id;
+
+    // ✅ Get logged-in user's profile
+    const myProfile = await Profile.findOne({ userId });
+
+    if (!myProfile) {
+      return res.status(404).json({
+        success: false,
+        message: "Your profile not found",
+      });
+    }
+
     const oppositeGender = getOppositeGender(myProfile.gender);
-    const profiles = await listFeaturedService(limit,oppositeGender );
-    res.status(200).json({ success: true, profiles });
+
+    const profiles = await listFeaturedService(limit, oppositeGender);
+
+    res.status(200).json({
+      success: true,
+      profiles,
+    });
+
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
