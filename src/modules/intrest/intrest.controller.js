@@ -4,18 +4,80 @@ import Profile from "../profile/profile.model.js";
 
 
 // -------------------- SEND INTEREST --------------------
+// export const sendInterestRequest = async (req, res) => {
+//   try {
+//     const senderId = req.user._id;
+//     const { receiverId, message } = req.body;
+
+//     if (senderId.toString() === receiverId)
+//       return res.status(400).json({ success: false, message: "You cannot send request to yourself" });
+
+//     // Check duplicate request
+//     const existing = await InterestRequest.findOne({ sender: senderId, receiver: receiverId });
+//     if (existing)
+//       return res.status(400).json({ success: false, message: "Request already sent" });
+
+//     const newRequest = await InterestRequest.create({
+//       sender: senderId,
+//       receiver: receiverId,
+//       message,
+//     });
+
+//     res.json({ success: true, message: "Interest Sent!", request: newRequest });
+
+//   } catch (err) {
+//     res.status(500).json({ success: false, message: err.message });
+//   }
+// };
+
 export const sendInterestRequest = async (req, res) => {
   try {
     const senderId = req.user._id;
     const { receiverId, message } = req.body;
 
-    if (senderId.toString() === receiverId)
-      return res.status(400).json({ success: false, message: "You cannot send request to yourself" });
+    if (!receiverId)
+      return res.status(400).json({ success: false, message: "Receiver required" });
 
-    // Check duplicate request
-    const existing = await InterestRequest.findOne({ sender: senderId, receiver: receiverId });
-    if (existing)
-      return res.status(400).json({ success: false, message: "Request already sent" });
+    if (senderId.toString() === receiverId)
+      return res.status(400).json({ success: false, message: "You cannot send interest to yourself" });
+
+    const existing = await InterestRequest.findOne({
+      sender: senderId,
+      receiver: receiverId,
+    }).sort({ createdAt: -1 });
+
+    if (existing) {
+
+      // Already connected
+      if (existing.status === "accepted") {
+        return res.status(400).json({
+          success: false,
+          message: "You are already connected with this user",
+        });
+      }
+
+      // Already pending
+      if (existing.status === "pending") {
+        return res.status(400).json({
+          success: false,
+          message: "Interest request already sent",
+        });
+      }
+
+      // Previously rejected → allow after cooldown
+      if (existing.status === "rejected") {
+        const cooldownDays = 7;
+        const daysPassed =
+          (Date.now() - new Date(existing.updatedAt)) / (1000 * 60 * 60 * 24);
+
+        if (daysPassed < cooldownDays) {
+          return res.status(400).json({
+            success: false,
+            message: `You can resend interest after ${cooldownDays} days`,
+          });
+        }
+      }
+    }
 
     const newRequest = await InterestRequest.create({
       sender: senderId,
@@ -23,13 +85,12 @@ export const sendInterestRequest = async (req, res) => {
       message,
     });
 
-    res.json({ success: true, message: "Interest Sent!", request: newRequest });
+    res.json({ success: true, message: "Interest sent successfully", request: newRequest });
 
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
-
 
 
 // -------------------- RECEIVED REQUESTS --------------------
@@ -163,15 +224,36 @@ export const getSentRequests = async (req, res) => {
 
 
 // -------------------- ACCEPT REQUEST --------------------
+// export const acceptRequest = async (req, res) => {
+//   try {
+//     const updated = await InterestRequest.findByIdAndUpdate(
+//       req.params.id,
+//       { status: "accepted" },
+//       { new: true }
+//     );
+
+//     res.json({ success: true, message: "Request Accepted", request: updated });
+
+//   } catch (err) {
+//     res.status(500).json({ success: false, message: err.message });
+//   }
+// };
+
+
 export const acceptRequest = async (req, res) => {
   try {
-    const updated = await InterestRequest.findByIdAndUpdate(
-      req.params.id,
-      { status: "accepted" },
-      { new: true }
-    );
+    const request = await InterestRequest.findById(req.params.id);
 
-    res.json({ success: true, message: "Request Accepted", request: updated });
+    if (!request)
+      return res.status(404).json({ success: false, message: "Request not found" });
+
+    if (request.status !== "pending")
+      return res.status(400).json({ success: false, message: "Request already processed" });
+
+    request.status = "accepted";
+    await request.save();
+
+    res.json({ success: true, message: "Request accepted", request });
 
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -181,21 +263,40 @@ export const acceptRequest = async (req, res) => {
 
 
 // -------------------- REJECT REQUEST --------------------
+// export const rejectRequest = async (req, res) => {
+//   try {
+//     const updated = await InterestRequest.findByIdAndUpdate(
+//       req.params.id,
+//       { status: "rejected" },
+//       { new: true }
+//     );
+
+//     res.json({ success: true, message: "Request Rejected", request: updated });
+
+//   } catch (err) {
+//     res.status(500).json({ success: false, message: err.message });
+//   }
+// };
+
 export const rejectRequest = async (req, res) => {
   try {
-    const updated = await InterestRequest.findByIdAndUpdate(
-      req.params.id,
-      { status: "rejected" },
-      { new: true }
-    );
+    const request = await InterestRequest.findById(req.params.id);
 
-    res.json({ success: true, message: "Request Rejected", request: updated });
+    if (!request)
+      return res.status(404).json({ success: false, message: "Request not found" });
+
+    if (request.status !== "pending")
+      return res.status(400).json({ success: false, message: "Request already processed" });
+
+    request.status = "rejected";
+    await request.save();
+
+    res.json({ success: true, message: "Request rejected", request });
 
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
-
 
 
 // -------------------- CANCEL REQUEST (Only sender) --------------------

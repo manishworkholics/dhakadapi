@@ -20,7 +20,7 @@ router.post("/create", protect, createProfile);
 router.put("/update", protect, updateProfile);
 router.get("/me", protect, getProfile);
 router.get("/search", protect, searchProfiles);
-router.get("/profiles", getAllProfiles);
+router.get("/profiles",protect, getAllProfiles);
 router.get("/filters", getFilterOptions);
 router.get("/:id", protect, getProfileById);
 router.get("/own-profile/:id", protect, getOwnProfileById);

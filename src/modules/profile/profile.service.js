@@ -1,4 +1,5 @@
 import Profile from "./profile.model.js";
+import { getOppositeGender } from "../../utils/gender.util.js";
 
 // -----------------------------
 // CREATE PROFILE
@@ -47,11 +48,17 @@ export const getProfileService = async (userId) => {
 // -----------------------------
 // SEARCH PROFILES (New Logic)
 // -----------------------------
-export const searchProfilesService = async (filters) => {
+export const searchProfilesService = async (filters, userProfile) => {
   const query = {};
 
+  const oppositeGender = getOppositeGender(userProfile.gender);
+
+  if (oppositeGender) {
+    query.gender = oppositeGender;
+  }
+
   // Gender
-  if (filters.gender) query.gender = filters.gender;
+ 
 
   // Religion
   if (filters.religion) query.religion = filters.religion;

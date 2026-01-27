@@ -1,7 +1,9 @@
 import Profile from "./profile.model.js";
 
-export const listFeaturedService = async (limit = 10) => {
-  const profiles = await Profile.find({ featured: true, isVisible: true }).limit(Number(limit)).lean();
+import { getOppositeGender } from "../../utils/gender.util.js";
+
+export const listFeaturedService = async (gender,limit = 10) => {
+  const profiles = await Profile.find({ featured: true, isVisible: true,gender }).limit(Number(limit)).lean();
   return profiles;
 };
 

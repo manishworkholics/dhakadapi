@@ -4,10 +4,11 @@ import {
   getProfileService,
   searchProfilesService,
 } from "./profile.service.js";
-
+import { getOppositeGender } from "../../utils/gender.util.js";
 import Profile from "./profile.model.js";
 import { calculateProfileScore } from "./profileScore.service.js";
-
+import UserPlan from "../plan/UserPlan.model.js";
+import User from "../auth/auth.model.js";
 
 export const createProfile = async (req, res) => {
   try {
@@ -77,18 +78,47 @@ export const updateProfile = async (req, res) => {
   }
 };
 
+// export const getProfile = async (req, res) => {
+//   try {
+//     const userId = req.user._id;
+//     const profile = await getProfileService(userId);
+
+//     res.status(200).json({ success: true, profile });
+
+//   } catch (error) {
+//     res.status(404).json({ success: false, message: error.message });
+//   }
+// };
+
+
 export const getProfile = async (req, res) => {
   try {
     const userId = req.user._id;
+
     const profile = await getProfileService(userId);
 
-    res.status(200).json({ success: true, profile });
+    // ✅ Check premium plan
+    const activePlan = await UserPlan.findOne({
+      user: userId,
+      status: "active",
+      endDate: { $gt: new Date() },
+    });
+
+    const hasPremiumAccess = !!activePlan;
+
+    res.status(200).json({
+      success: true,
+      profile,
+      hasPremiumAccess,   // ✅ important
+    });
 
   } catch (error) {
-    res.status(404).json({ success: false, message: error.message });
+    res.status(404).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
-
 
 
 
@@ -129,45 +159,214 @@ export const getFilterOptions = async (req, res) => {
 
 
 
+// export const getProfileById = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+
+//     const profile = await Profile.findById(id);
+//     if (!profile) {
+//       return res.status(404).json({ success: false, message: "Profile not found" });
+//     }
+
+//     res.status(200).json({ success: true, profile });
+
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
+// export const getProfileById = async (req, res) => {
+//   try {
+//     const { id } = req.params; // profile id
+//     const viewerId = req.user?._id;
+
+//     // 1. Get profile
+//     const profile = await Profile.findById(id).lean();
+
+//     if (!profile) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Profile not found",
+//       });
+//     }
+
+//     // 2. Get user (for phone & email)
+//     const profileUser = await User.findById(profile.userId)
+//       .select("phone email")
+//       .lean();
+
+//     // 3. Premium check
+//     let hasPremiumAccess = false;
+
+//     if (viewerId) {
+//       const activePlan = await UserPlan.findOne({
+//         user: viewerId,
+//         status: "active",
+//         endDate: { $gt: new Date() },
+//       });
+
+//       hasPremiumAccess = !!activePlan;
+//     }
+
+//     // 4. Attach or hide sensitive fields
+//     if (hasPremiumAccess && profileUser) {
+//       profile.phone = profileUser.phone;
+//       profile.email = profileUser.email;
+//     } else {
+//       profile.phone = "🔒 Upgrade to premium to view contact details";
+//       profile.email = "🔒 Upgrade to premium to view contact details";
+//     }
+
+//     res.status(200).json({
+//       success: true,
+//       profile,
+//       hasPremiumAccess,
+//     });
+
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
+
 export const getProfileById = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params; // profile id
+    const viewerId = req.user?._id;
 
-    const profile = await Profile.findById(id);
+    // 1. Get profile
+    const profile = await Profile.findById(id).lean();
+
     if (!profile) {
-      return res.status(404).json({ success: false, message: "Profile not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Profile not found",
+      });
     }
 
-    res.status(200).json({ success: true, profile });
+    // 2. Get user (for phone & email)
+    const profileUser = await User.findById(profile.userId)
+      .select("phone email")
+      .lean();
+
+    // 3. Premium check
+    let hasPremiumAccess = false;
+
+    if (viewerId) {
+      const activePlan = await UserPlan.findOne({
+        user: viewerId,
+        status: "active",
+        endDate: { $gt: new Date() },
+      });
+
+      hasPremiumAccess = !!activePlan;
+    }
+
+    // 4. Attach or hide sensitive fields
+    if (hasPremiumAccess && profileUser) {
+      profile.phone = profileUser.phone;
+      profile.email = profileUser.email;
+    } else {
+      profile.phone = "🔒 Upgrade to premium to view contact details";
+      profile.email = "🔒 Upgrade to premium to view contact details";
+    }
+
+    // 5. Restrict photos for non-premium users
+    if (!hasPremiumAccess && Array.isArray(profile.photos)) {
+      profile.photos = profile.photos.length > 0 ? [profile.photos[0]] : [];
+    }
+
+    res.status(200).json({
+      success: true,
+      profile,
+      hasPremiumAccess,
+    });
 
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
+
+// export const getOwnProfileById = async (req, res) => {
+//   try {
+//     const { id } = req.params; // this is actually userId from session/auth
+
+//     // Find profile by userId field, not _id
+//     const profile = await Profile.findOne({ userId: id });
+
+//     if (!profile) {
+//       return res.status(404).json({ success: false, message: "Profile not found" });
+//     }
+
+//     res.status(200).json({ success: true, profile });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
 
 export const getOwnProfileById = async (req, res) => {
   try {
-    const { id } = req.params; // this is actually userId from session/auth
+    const { id } = req.params; // userId from auth/session
 
-    // Find profile by userId field, not _id
-    const profile = await Profile.findOne({ userId: id });
+    // 1. Get profile by userId
+    const profile = await Profile.findOne({ userId: id }).lean();
 
     if (!profile) {
-      return res.status(404).json({ success: false, message: "Profile not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Profile not found",
+      });
     }
 
-    res.status(200).json({ success: true, profile });
+    // 2. Get user phone & email
+    const user = await User.findById(id)
+      .select("phone email")
+      .lean();
+
+    // 3. Check premium plan
+    const activePlan = await UserPlan.findOne({
+      user: id,
+      status: "active",
+      endDate: { $gt: new Date() },
+    });
+
+    const hasPremiumAccess = !!activePlan;
+
+    // 4. Attach phone & email (always allowed for own profile)
+    profile.phone = user?.phone || null;
+    profile.email = user?.email || null;
+
+    res.status(200).json({
+      success: true,
+      profile,
+      hasPremiumAccess,
+    });
+
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
-
 
 
 // ⭐ SEARCH PROFILES (Filter, Sort, Pagination)
 export const searchProfiles = async (req, res) => {
   try {
-    const profiles = await searchProfilesService(req.query);
+    const myProfile = await Profile.findOne({ userId: req.user._id });
+
+    if (!myProfile) {
+      return res.status(404).json({ success: false, message: "Profile not found" });
+    }
+
+    const profiles = await searchProfilesService(req.query, myProfile);
     res.status(200).json({
       success: true,
       results: profiles.length,
@@ -216,6 +415,18 @@ export const getAllProfiles = async (req, res) => {
       query.userId = { $ne: userId };   // or userId field depending on schema
     }
 
+    const myProfile = await Profile.findOne({ userId: req.user._id });
+
+    if (!myProfile) {
+      return res.status(404).json({ success: false, message: "Profile not found" });
+    }
+
+    const oppositeGender = getOppositeGender(myProfile.gender);
+
+    if (oppositeGender) {
+      query.gender = oppositeGender;
+    }
+
     if (gender) query.gender = gender;
     if (religion) query.religion = religion;
     if (location) query["location"] = { $regex: location, $options: "i" };
@@ -251,6 +462,8 @@ export const getAllProfiles = async (req, res) => {
       .limit(Number(limit));
 
     const total = await Profile.countDocuments(query);
+
+
 
     res.status(200).json({
       success: true,

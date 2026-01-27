@@ -18,11 +18,8 @@ const profileSchema = new mongoose.Schema(
     gender: { type: String },
     // Step 2
     height: { type: String },
-    physicalStatus: { type: String, enum: ["Normal", "Physically challenged"] },
-    maritalStatus: {
-      type: String,
-      enum: ["Never married", "Widower", "Awaiting divorce", "Divorced"],
-    },
+    physicalStatus: { type: String },
+    maritalStatus: { type: String },
     religion: { type: String },
     caste: { type: String },
     subCaste: { type: String },
@@ -35,14 +32,8 @@ const profileSchema = new mongoose.Schema(
     annualIncome: { type: String },
 
     // Step 4
-    familyStatus: {
-      type: String,
-      enum: ["Middle class", "Upper middle class", "Rich / Affluent (Elite)"],
-    },
-    diet: {
-      type: String,
-      enum: ["Veg", "Nonveg", "Occasionally Non-Veg", "Vegan"],
-    },
+    familyStatus: { type: String },
+    diet: { type: String },
     aboutYourself: { type: String },
     hobbies: { type: String },
     // Step 5

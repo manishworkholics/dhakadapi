@@ -83,6 +83,9 @@ app.use("/api/partner-preference", PartnerPreferenceRoutes);
 import MatchesRoutes from "./modules/match/match.routes.js";
 app.use("/api/matches", MatchesRoutes);
 
+import NotificationRoutes from "./modules/notification/notification.route.js";
+app.use("/api/notifications", NotificationRoutes);
+
 import chatSocket from "./modules/chat/chat.socket.js";
 
 const server = http.createServer(app);

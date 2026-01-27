@@ -5,10 +5,10 @@ import {
   removeShortlist,
   getShortlistedProfiles
 } from "../shortlist/shortlist.controller.js";
-
+import { checkPremiumPlan } from "../../middleware/checkPremiumPlan.js";
 const router = express.Router();
 
-router.post("/:profileId", protect, addShortlist);
+router.post("/:profileId", protect,checkPremiumPlan, addShortlist);
 router.delete("/:profileId", protect, removeShortlist);
 router.get("/", protect, getShortlistedProfiles);
 

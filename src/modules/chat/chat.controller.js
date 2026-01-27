@@ -1,7 +1,7 @@
 import ChatRoom from "../chat/ChatRoom.model.js";
 import ChatMessage from "../chat/Message.model.js";
 import Profile from "../profile/profile.model.js"
-
+import UserPlan from "../plan/UserPlan.model.js";
 
 export const chatNow = async (req, res) => {
   try {
@@ -300,19 +300,76 @@ export const getMessages = async (req, res) => {
 };
 
 
+// export const sendMessage = async (req, res) => {
+//   try {
+//     const senderId = req.user._id;
+//     const { chatRoomId, message } = req.body;
+
+//     const chat = await ChatRoom.findById(chatRoomId);
+
+//     if (!chat || chat.status !== "active") {
+//       return res.status(403).json({
+//         success: false,
+//         message: "Chat not active yet",
+//       });
+//     }
+
+//     if (!chatRoomId || !message) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "chatRoomId and message are required",
+//       });
+//     }
+
+//     const room = await ChatRoom.findById(chatRoomId);
+//     if (!room) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Chat room not found",
+//       });
+//     }
+
+//     const isParticipant = room.participants.some(
+//       (id) => id.toString() === senderId.toString()
+//     );
+
+//     if (!isParticipant) {
+//       return res.status(403).json({
+//         success: false,
+//         message: "You are not allowed to send message in this room",
+//       });
+//     }
+
+//     const newMessage = await ChatMessage.create({
+//       chatRoom: chatRoomId,
+//       sender: senderId,
+//       message,
+//       seenBy: [senderId],
+//     });
+
+//     req.io?.emit("newMessage", newMessage);
+
+//     await ChatRoom.findByIdAndUpdate(chatRoomId, {
+//       lastMessage: newMessage._id,
+//     });
+
+//     res.status(201).json({
+//       success: true,
+//       data: newMessage,
+//     });
+//   } catch (err) {
+//     res.status(500).json({
+//       success: false,
+//       message: err.message,
+//     });
+//   }
+// };
+
+
 export const sendMessage = async (req, res) => {
   try {
     const senderId = req.user._id;
     const { chatRoomId, message } = req.body;
-
-    const chat = await ChatRoom.findById(chatRoomId);
-
-    if (!chat || chat.status !== "active") {
-      return res.status(403).json({
-        success: false,
-        message: "Chat not active yet",
-      });
-    }
 
     if (!chatRoomId || !message) {
       return res.status(400).json({
@@ -321,11 +378,34 @@ export const sendMessage = async (req, res) => {
       });
     }
 
+    // ✅ Premium check
+    const activePlan = await UserPlan.findOne({
+      user: senderId,
+      status: "active",
+      endDate: { $gt: new Date() },
+    });
+
+    if (!activePlan) {
+      return res.status(403).json({
+        success: false,
+        code: "PREMIUM_REQUIRED",
+        message: "Premium plan required to send messages",
+      });
+    }
+
     const room = await ChatRoom.findById(chatRoomId);
+
     if (!room) {
       return res.status(404).json({
         success: false,
         message: "Chat room not found",
+      });
+    }
+
+    if (room.status !== "active") {
+      return res.status(403).json({
+        success: false,
+        message: "Chat not active yet",
       });
     }
 
@@ -349,14 +429,14 @@ export const sendMessage = async (req, res) => {
 
     req.io?.emit("newMessage", newMessage);
 
-    await ChatRoom.findByIdAndUpdate(chatRoomId, {
-      lastMessage: newMessage._id,
-    });
+    room.lastMessage = newMessage._id;
+    await room.save();
 
     res.status(201).json({
       success: true,
       data: newMessage,
     });
+
   } catch (err) {
     res.status(500).json({
       success: false,
@@ -364,9 +444,6 @@ export const sendMessage = async (req, res) => {
     });
   }
 };
-
-
-
 
 // ================= CHAT LIST =================
 export const getChatLists = async (req, res) => {
