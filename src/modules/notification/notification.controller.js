@@ -10,23 +10,30 @@ export const getMyNotifications = async (req, res) => {
       sender: { $ne: userId }
     })
       .sort({ createdAt: -1 })
+
+      // populate sender user
       .populate("sender", "name")
-      .populate("profile", "name photos")
+
+      // populate sender profile directly
+      .populate({
+        path: "profile",
+        select: "name photos userId",
+      })
+
       .lean();
 
-    // Attach sender profile photo
     const formatted = await Promise.all(
       notifications.map(async (n) => {
-        const senderProfile = await Profile.findOne({ userId: n.sender?._id })
-          .select("photos")
-          .lean();
+        const senderProfile = await Profile.findOne({ userId: n.sender._id });
 
         return {
           ...n,
-          senderPhoto: senderProfile?.photos?.[0] || null,
+          senderProfileId: senderProfile?._id,
+          senderPhoto: senderProfile?.photos?.[0]
         };
       })
     );
+
 
     res.status(200).json({
       success: true,
@@ -38,3 +45,4 @@ export const getMyNotifications = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
