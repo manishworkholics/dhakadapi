@@ -198,23 +198,52 @@ export const deletePlan = async (req, res) => {
 
 
 export const getAllPaymentHistory = async (req, res) => {
-    const plans = await Payment.find({ isActive: true }).sort({ price: 1 });
-    res.json({ success: true, plans });
+    try {
+
+        const page = Number(req.query.page) || 1;
+        const limit = Number(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+
+        const payments = await Payment.find({ status: "paid" })
+            .populate("user", "name email")
+            .populate("plan", "name price")
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        const total = await Payment.countDocuments({ status: "paid" });
+
+        res.json({
+            success: true,
+            payments,
+            page,
+            totalPages: Math.ceil(total / limit),
+            total,
+        });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({
+            success: false,
+            message: err.message,
+        });
+    }
 };
 
+
 export const getPaymentHistory = async (req, res) => {
-  try {
-    const userId = req.user._id;
+    try {
+        const userId = req.user._id;
 
-    const history = await Payment.find({ user: userId })
-      .populate("plan", "name")   // 👈 populate plan name
-      .sort({ createdAt: -1 });
+        const history = await Payment.find({ user: userId })
+            .populate("plan", "name")   // 👈 populate plan name
+            .sort({ createdAt: -1 });
 
-    res.json({ success: true, history });
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
+        res.json({ success: true, history });
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
 };
 
 
