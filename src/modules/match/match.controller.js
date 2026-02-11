@@ -3,6 +3,10 @@ import PartnerPreference from "./PartnerPreference.model.js";
 
 
 
+import UserPlan from "../plan/UserPlan.model.js";
+import User from "../auth/auth.model.js";
+
+
 export const getMatches = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -120,12 +124,12 @@ export const getMatches = async (req, res) => {
 
 export const getSingleMatchProfile = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const viewerId = req.user.id;
     const { id } = req.params;
 
-    const pref = await PartnerPreference.findOne({ userId });
-    const userProfile = await Profile.findOne({ userId });
-    const profile = await Profile.findById(id);
+    const pref = await PartnerPreference.findOne({ userId: viewerId });
+    const userProfile = await Profile.findOne({ userId: viewerId });
+    const profile = await Profile.findById(id).lean();
 
     if (!profile) {
       return res.status(404).json({
@@ -134,6 +138,37 @@ export const getSingleMatchProfile = async (req, res) => {
       });
     }
 
+    /* ================= GET PROFILE USER ================= */
+    const profileUser = await User.findById(profile.userId)
+      .select("phone email")
+      .lean();
+
+    /* ================= PREMIUM CHECK ================= */
+    let hasPremiumAccess = false;
+
+    const activePlan = await UserPlan.findOne({
+      user: viewerId,
+      status: "active",
+      endDate: { $gt: new Date() },
+    });
+
+    hasPremiumAccess = !!activePlan;
+
+    /* ================= PHONE / EMAIL CONTROL ================= */
+    if (hasPremiumAccess && profileUser) {
+      profile.phone = profileUser.phone;
+      profile.email = profileUser.email;
+    } else {
+      profile.phone = "🔒 Upgrade to premium to view contact details";
+      profile.email = "🔒 Upgrade to premium to view contact details";
+    }
+
+    /* ================= PHOTO CONTROL ================= */
+    if (!hasPremiumAccess && Array.isArray(profile.photos)) {
+      profile.photos = profile.photos.length > 0 ? [profile.photos[0]] : [];
+    }
+
+    /* ================= MATCH LOGIC ================= */
     let score = 0;
     let total = 0;
     const matchedFields = [];
@@ -184,8 +219,7 @@ export const getSingleMatchProfile = async (req, res) => {
     const matchPercent =
       total > 0 ? Math.round((score / total) * 100) : 20;
 
-    /* ---------- Preference UI Section ---------- */
-
+    /* ================= PREFERENCE UI ================= */
     const preferenceMatches = [
       {
         field: "Age",
@@ -219,8 +253,7 @@ export const getSingleMatchProfile = async (req, res) => {
       },
     ];
 
-    /* ---------- Common Points ---------- */
-
+    /* ================= COMMON POINTS ================= */
     const commonPoints = [];
 
     if (userProfile?.educationDetails === profile.educationDetails) {
@@ -238,6 +271,7 @@ export const getSingleMatchProfile = async (req, res) => {
     res.json({
       success: true,
       profile,
+      hasPremiumAccess,
       compatibility: {
         matchPercent,
         matchedCount: score,
@@ -257,3 +291,4 @@ export const getSingleMatchProfile = async (req, res) => {
     });
   }
 };
+
