@@ -1,5 +1,4 @@
 import {
-  createProfileService,
   updateProfileService,
   getProfileService,
   searchProfilesService,
@@ -78,19 +77,6 @@ export const updateProfile = async (req, res) => {
   }
 };
 
-// export const getProfile = async (req, res) => {
-//   try {
-//     const userId = req.user._id;
-//     const profile = await getProfileService(userId);
-
-//     res.status(200).json({ success: true, profile });
-
-//   } catch (error) {
-//     res.status(404).json({ success: false, message: error.message });
-//   }
-// };
-
-
 export const getProfile = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -157,80 +143,6 @@ export const getFilterOptions = async (req, res) => {
   }
 };
 
-
-
-// export const getProfileById = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-
-//     const profile = await Profile.findById(id);
-//     if (!profile) {
-//       return res.status(404).json({ success: false, message: "Profile not found" });
-//     }
-
-//     res.status(200).json({ success: true, profile });
-
-//   } catch (error) {
-//     res.status(500).json({ success: false, message: error.message });
-//   }
-// };
-
-// export const getProfileById = async (req, res) => {
-//   try {
-//     const { id } = req.params; // profile id
-//     const viewerId = req.user?._id;
-
-//     // 1. Get profile
-//     const profile = await Profile.findById(id).lean();
-
-//     if (!profile) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Profile not found",
-//       });
-//     }
-
-//     // 2. Get user (for phone & email)
-//     const profileUser = await User.findById(profile.userId)
-//       .select("phone email")
-//       .lean();
-
-//     // 3. Premium check
-//     let hasPremiumAccess = false;
-
-//     if (viewerId) {
-//       const activePlan = await UserPlan.findOne({
-//         user: viewerId,
-//         status: "active",
-//         endDate: { $gt: new Date() },
-//       });
-
-//       hasPremiumAccess = !!activePlan;
-//     }
-
-//     // 4. Attach or hide sensitive fields
-//     if (hasPremiumAccess && profileUser) {
-//       profile.phone = profileUser.phone;
-//       profile.email = profileUser.email;
-//     } else {
-//       profile.phone = "🔒 Upgrade to premium to view contact details";
-//       profile.email = "🔒 Upgrade to premium to view contact details";
-//     }
-
-//     res.status(200).json({
-//       success: true,
-//       profile,
-//       hasPremiumAccess,
-//     });
-
-//   } catch (error) {
-//     res.status(500).json({
-//       success: false,
-//       message: error.message,
-//     });
-//   }
-// };
-
 export const getProfileById = async (req, res) => {
   try {
     const { id } = req.params; // profile id
@@ -291,24 +203,6 @@ export const getProfileById = async (req, res) => {
     });
   }
 };
-
-// export const getOwnProfileById = async (req, res) => {
-//   try {
-//     const { id } = req.params; // this is actually userId from session/auth
-
-//     // Find profile by userId field, not _id
-//     const profile = await Profile.findOne({ userId: id });
-
-//     if (!profile) {
-//       return res.status(404).json({ success: false, message: "Profile not found" });
-//     }
-
-//     res.status(200).json({ success: true, profile });
-//   } catch (error) {
-//     res.status(500).json({ success: false, message: error.message });
-//   }
-// };
-
 
 export const getOwnProfileById = async (req, res) => {
   try {

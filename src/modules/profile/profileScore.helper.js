@@ -19,5 +19,4 @@ export const scoreFields = [
   "diet",
   "aboutYourself",
   "photos",
-  "introVideo"
 ];

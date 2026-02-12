@@ -38,7 +38,7 @@ const profileSchema = new mongoose.Schema(
     hobbies: { type: String },
     // Step 5
     photos: [String],
-    introVideo: String,
+    
 
     // Optional
     aiBio: String,
