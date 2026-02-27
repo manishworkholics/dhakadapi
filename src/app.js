@@ -86,6 +86,10 @@ app.use("/api/matches", MatchesRoutes);
 import NotificationRoutes from "./modules/notification/notification.route.js";
 app.use("/api/notifications", NotificationRoutes);
 
+
+import ReviewRoutes from "./modules/review/review.routes.js";
+app.use("/api/review", ReviewRoutes);
+
 import chatSocket from "./modules/chat/chat.socket.js";
 
 const server = http.createServer(app);
