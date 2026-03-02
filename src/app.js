@@ -18,6 +18,7 @@ app.use(compression());
 app.use(morgan("dev"));
 
 
+
 import authRoutes from "./modules/auth/auth.routes.js";
 app.use("/api/auth", authRoutes);
 

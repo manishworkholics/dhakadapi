@@ -58,6 +58,83 @@ export const createOrder = async (req, res) => {
 
 
 
+// export const verifyPayment = async (req, res) => {
+//     try {
+//         const {
+//             razorpay_order_id,
+//             razorpay_payment_id,
+//             razorpay_signature,
+//         } = req.body;
+
+//         const body = razorpay_order_id + "|" + razorpay_payment_id;
+
+//         const expectedSignature = crypto
+//             .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+//             .update(body.toString())
+//             .digest("hex");
+
+//         if (expectedSignature !== razorpay_signature) {
+//             return res.status(400).json({ success: false, message: "Invalid signature" });
+//         }
+
+//         const payment = await Payment.findOne({
+//             razorpayOrderId: razorpay_order_id,
+//         });
+
+//         if (!payment) {
+//             return res.status(404).json({ success: false, message: "Payment not found" });
+//         }
+
+//         // 🔥 Prevent double verification
+//         if (payment.status === "paid") {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "Payment already verified"
+//             });
+//         }
+
+//         payment.razorpayPaymentId = razorpay_payment_id;
+//         payment.razorpaySignature = razorpay_signature;
+//         payment.status = "paid";
+//         payment.paidAt = new Date();
+
+//         await payment.save();
+
+//         // Activate plan
+//         const plan = await Plan.findById(payment.plan);
+//         const startDate = new Date();
+//         const endDate = new Date();
+//         endDate.setMonth(endDate.getMonth() + plan.durationMonths);
+
+//         await UserPlan.updateMany(
+//             { user: payment.user, status: "active" },
+//             { status: "expired" }
+//         );
+
+//         const userPlan = await UserPlan.create({
+//             user: payment.user,
+//             plan: plan._id,
+//             startDate,
+//             endDate,
+//             status: "active",
+//             paymentStatus: "paid",
+//         });
+
+//         await User.findByIdAndUpdate(payment.user, {
+//             currentPlan: userPlan._id,
+//         });
+
+//         res.json({
+//             success: true,
+//             message: "Payment verified & plan activated",
+//         });
+//     } catch (err) {
+//         res.status(500).json({ success: false, message: err.message });
+//     }
+// };
+
+
+
 export const verifyPayment = async (req, res) => {
     try {
         const {
@@ -74,7 +151,10 @@ export const verifyPayment = async (req, res) => {
             .digest("hex");
 
         if (expectedSignature !== razorpay_signature) {
-            return res.status(400).json({ success: false, message: "Invalid signature" });
+            return res.status(400).json({
+                success: false,
+                message: "Invalid signature"
+            });
         }
 
         const payment = await Payment.findOne({
@@ -82,16 +162,31 @@ export const verifyPayment = async (req, res) => {
         });
 
         if (!payment) {
-            return res.status(404).json({ success: false, message: "Payment not found" });
+            return res.status(404).json({
+                success: false,
+                message: "Payment not found"
+            });
+        }
+
+        // 🔥 Prevent double verification
+        if (payment.status === "paid") {
+            return res.status(400).json({
+                success: false,
+                message: "Payment already verified"
+            });
         }
 
         payment.razorpayPaymentId = razorpay_payment_id;
         payment.razorpaySignature = razorpay_signature;
         payment.status = "paid";
+        payment.paidAt = new Date();
+
         await payment.save();
 
-        // Activate plan
+        // ================= Activate Plan =================
+
         const plan = await Plan.findById(payment.plan);
+
         const startDate = new Date();
         const endDate = new Date();
         endDate.setMonth(endDate.getMonth() + plan.durationMonths);
@@ -114,12 +209,16 @@ export const verifyPayment = async (req, res) => {
             currentPlan: userPlan._id,
         });
 
-        res.json({
+        return res.json({
             success: true,
             message: "Payment verified & plan activated",
         });
+
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        return res.status(500).json({
+            success: false,
+            message: err.message
+        });
     }
 };
 

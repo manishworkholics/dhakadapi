@@ -24,6 +24,15 @@ export const approveProfile = async (req, res) => {
     );
     if (!profile) return res.status(404).json({ message: "Profile not found" });
 
+    await logAdminAction({
+      adminId: req.admin._id,
+      action: "APPROVE_PROFILE",
+      targetType: "Profile",
+      targetId: profile._id,
+      metadata: { userId: profile.userId },
+      ip: req.ip,
+    });
+
     res.status(200).json({ success: true, message: "Profile approved", profile });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

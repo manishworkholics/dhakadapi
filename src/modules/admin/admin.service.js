@@ -18,6 +18,6 @@ export const adminLoginService = async (email, password) => {
   const match = await bcrypt.compare(password, admin.password);
   if (!match) throw new Error("Invalid credentials");
 
-  const token = generateToken(admin._id);
+  const token = generateToken(admin._id.toString());
   return { admin, token };
 };

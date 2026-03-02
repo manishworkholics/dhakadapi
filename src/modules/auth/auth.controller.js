@@ -58,42 +58,65 @@ export const resendOtp = async (req, res) => {
   }
 };
 
-
-
 // export const registerUser = async (req, res) => {
 //   try {
 //     const { name, email, phone, createdfor, password } = req.body;
+
 //     if (!email || !password || !phone)
-//       return res.status(400).json({ message: "Email and password are required" });
+//       return res.status(400).json({ message: "Email, phone and password are required" });
 
-//     const { user, token } = await registerUserService(name, email, phone, createdfor, password);
-//     res.status(201).json({
-//       success: true,
-//       message: "Registration successful",
-//       // token,
-//       user: { id: user._id, name: user.name, email: user.email, phone: user.phone, createdfor: user.createdfor },
+//     // 🔍 Check existing user
+//     const existingUser = await User.findOne({
+//       $or: [{ email }, { phone }]
 //     });
-//   } catch (err) {
 
-//     if (err.code === 11000) {
-//       if (err.keyPattern.phone) {
-//         return res.status(409).json({
-//           success: false,
-//           message: "This phone number is already registered"
-//         });
-//       }
+//     // ⚠️ If user exists but email not verified
+//     if (existingUser && !existingUser.emailVerified) {
 
-//       if (err.keyPattern.email) {
-//         return res.status(409).json({
-//           success: false,
-//           message: "This email is already registered"
-//         });
-//       }
+//       // resend OTP
+//       const otp = await resendEmailOtpService(email);
+
+//       return res.status(200).json({
+//         success: true,
+//         message: "Email not verified. OTP sent again.",
+//         requiresVerification: true,
+//         user: {
+//           _id: existingUser._id,
+//           email: existingUser.email,
+//           phone: existingUser.phone
+//         },
+//         debugOtp: otp
+//       });
 //     }
 
-//     res.status(400).json({ success: false, message: err.message });
-//   }
+//     // ❌ If user exists and verified
+//     if (existingUser && existingUser.emailVerified) {
+//       return res.status(409).json({
+//         success: false,
+//         message: "Email or phone already registered"
+//       });
+//     }
 
+//     // ✅ New user → register
+//     const { user } = await registerUserService(name, email, phone, createdfor, password);
+
+//     const otp = await emailOtpService(email);
+
+//     return res.status(201).json({
+//       success: true,
+//       message: "Registration successful. OTP sent to email.",
+//       requiresVerification: true,
+//       user: {
+//         _id: user._id,
+//         email: user.email,
+//         phone: user.phone
+//       },
+//       debugOtp: otp
+//     });
+
+//   } catch (err) {
+//     res.status(500).json({ success: false, message: err.message });
+//   }
 // };
 
 
@@ -101,112 +124,71 @@ export const registerUser = async (req, res) => {
   try {
     const { name, email, phone, createdfor, password } = req.body;
 
-    if (!email || !password || !phone)
-      return res.status(400).json({ message: "Email, phone and password are required" });
+    if (!email || !phone || !password)
+      return res.status(400).json({ message: "Email, phone and password required" });
 
-    // 🔍 Check existing user
     const existingUser = await User.findOne({
       $or: [{ email }, { phone }]
     });
 
-    // ⚠️ If user exists but email not verified
-    if (existingUser && !existingUser.emailVerified) {
+    // If user exists but phone not verified
+    if (existingUser && !existingUser.isVerified) {
 
-      // resend OTP
-      const otp = await resendEmailOtpService(email);
+      const otp = Math.floor(1000 + Math.random() * 9000);
+
+      existingUser.otp = otp;
+      existingUser.otpExpiry = Date.now() + 5 * 60 * 1000;
+      await existingUser.save();
+
+      await sendSMS(phone, `Your Dhakad Matrimony OTP is ${otp}`);
 
       return res.status(200).json({
         success: true,
-        message: "Email not verified. OTP sent again.",
         requiresVerification: true,
-        user: {
-          _id: existingUser._id,
-          email: existingUser.email,
-          phone: existingUser.phone
-        },
-        debugOtp: otp
+        message: "Phone not verified. OTP sent again.",
+        userId: existingUser._id,
+        phone: existingUser.phone
       });
     }
 
-    // ❌ If user exists and verified
-    if (existingUser && existingUser.emailVerified) {
+    // If already verified
+    if (existingUser && existingUser.isVerified) {
       return res.status(409).json({
         success: false,
         message: "Email or phone already registered"
       });
     }
 
-    // ✅ New user → register
-    const { user } = await registerUserService(name, email, phone, createdfor, password);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    const otp = await emailOtpService(email);
+    const otp = Math.floor(1000 + Math.random() * 9000);
+
+    const user = await User.create({
+      name,
+      email,
+      phone,
+      createdfor,
+      password: hashedPassword,
+      emailVerified: true, // auto verified
+      otp,
+      otpExpiry: Date.now() + 5 * 60 * 1000,
+      isVerified: false
+    });
+
+    await sendSMS(phone, `Your Dhakad Matrimony OTP is ${otp}`);
 
     return res.status(201).json({
       success: true,
-      message: "Registration successful. OTP sent to email.",
       requiresVerification: true,
-      user: {
-        _id: user._id,
-        email: user.email,
-        phone: user.phone
-      },
-      debugOtp: otp
+      message: "Registration successful. OTP sent to mobile.",
+      userId: user._id,
+      phone: user.phone
     });
 
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
-
-
-// export const emailLogin = async (req, res) => {
-//   try {
-//     const { email, password } = req.body;
-//     if (!email || !password)
-//       return res.status(400).json({ message: "Email and password required" });
-
-//     const { user, token } = await emailLoginService(email, password);
-
-//     if (!user) return res.status(400).json({ success: false, message: "Invalid credentials" });
-
-//     // ⛔ If email NOT verified → Send OTP FIRST
-//     if (!user.emailVerified) {
-//       const otp = await emailOtpService(email);
-
-//       return res.status(200).json({
-//         success: true,
-//         requiresVerification: true,
-//         message: "OTP sent to email for verification.",
-//         user: {
-//           _id: user._id,
-//           phone: user.phone,
-//           email: user.email,
-//           name: user.name,
-//           isVerified: user.isVerified,
-//         },
-//         debugOtp: otp,  // ⚠ only for testing
-//       });
-//     }
-
-//     // 🎉 Email already verified → Direct Login
-//     return res.status(200).json({
-//       success: true,
-//       requiresVerification: false,
-//       message: "Login successful",
-//       token,
-//       user: {
-//         _id: user._id,
-//         phone: user.phone,
-//         email: user.email,
-//         name: user.name,
-//         isVerified: user.isVerified,
-//       }
-//     });
-
-//   } catch (err) {
-//     res.status(400).json({ success: false, message: err.message });
-//   }
-// };
 
 
 export const emailLogin = async (req, res) => {

@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { seedRolesAndPermissions } from "../modules/admin/seedRoles.js";
 
 const connectDB = async () => {
   try {
@@ -6,6 +7,7 @@ const connectDB = async () => {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
+    await seedRolesAndPermissions();
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
     console.error(`❌ MongoDB Connection Error: ${error.message}`);

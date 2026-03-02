@@ -3,11 +3,12 @@ import Admin from "./admin.model.js";
 
 
 
-
+import bcrypt from "bcrypt";
 import User from "../auth/auth.model.js";
 import PartnerPreference from "../match/PartnerPreference.model.js";
 import Payment from "../plan/Payment.model.js";
 import Profile from "../profile/profile.model.js";
+import Role from "./role.model.js";
 
 export const getAdminDashboard = async (req, res) => {
   try {
@@ -137,14 +138,34 @@ export const getAdminDashboard = async (req, res) => {
 
 export const registerAdmin = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
-    if (!email || !password)
-      return res.status(400).json({ message: "Email and password are required" });
+    const { name, email, password, roleName } = req.body;
 
-    const admin = await createAdminService(name, email, password);
-    res.status(201).json({ success: true, message: "Admin created", admin });
+    if (!email || !password || !roleName) {
+      return res.status(400).json({ message: "All fields required" });
+    }
+
+    const role = await Role.findOne({ name: roleName });
+
+    if (!role) {
+      return res.status(400).json({ message: "Invalid role" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const admin = await Admin.create({
+      name,
+      email,
+      password: hashedPassword,
+      roles: [role._id],
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Admin created successfully",
+    });
+
   } catch (err) {
-    res.status(400).json({ success: false, message: err.message });
+    res.status(500).json({ message: err.message });
   }
 };
 

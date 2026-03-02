@@ -2,6 +2,7 @@ import express from "express";
 import { getPlans, buyPlan, getMyPlan, createPlan, createOrder, verifyPayment, getPaymentHistory, getAllPaymentHistory, deletePlan, updatePlan } from "../plan/plan.controller.js";
 import { protect } from "../../middleware/authMiddleware.js";
 import { adminProtect } from "../../middleware/adminMiddleware.js";
+import { authorizePermission } from "../../middleware/permissionMiddleware.js";
 
 const router = express.Router();
 
@@ -12,7 +13,12 @@ router.get("/my-plan", protect, getMyPlan);
 router.post("/create-order", protect, createOrder);
 router.post("/verify", protect, verifyPayment);
 router.get("/history", protect, getPaymentHistory);
-router.get("/get-all-payment-history", adminProtect, getAllPaymentHistory);
+router.get(
+   "/get-all-payment-history",
+   adminProtect,
+   authorizePermission("manage_payments"),
+   getAllPaymentHistory
+);
 
 // routes/admin.routes.js
 router.get("/", getPlans);

@@ -2,8 +2,8 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
-    phone: { type: String },
-    email: { type: String, unique: true, sparse: true },
+    phone: { type: String, required: true, unique: true },
+    email: { type: String, required: true, unique: true },
     password: { type: String },
 
     createdfor: { type: String },
@@ -22,7 +22,7 @@ const userSchema = new mongoose.Schema(
     // Email Login + Verification
     emailOtp: String,
     emailOtpExpires: Date,
-    emailVerified: { type: Boolean, default: false },
+    emailVerified: { type: Boolean, default: true },
 
     // ⭐ Forgot Password Feature
     resetOtp: { type: String, default: null },
