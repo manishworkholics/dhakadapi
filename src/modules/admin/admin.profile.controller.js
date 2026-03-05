@@ -1,4 +1,5 @@
 import Profile from "../profile/profile.model.js";
+import { logAdminAction } from "../../utils/adminLogger.js";
 
 // Get all pending profiles (to verify)
 export const getPendingProfiles = async (req, res) => {

@@ -9,6 +9,7 @@ import PartnerPreference from "../match/PartnerPreference.model.js";
 import Payment from "../plan/Payment.model.js";
 import Profile from "../profile/profile.model.js";
 import Role from "./role.model.js";
+import AdminLog from "./adminLog.model.js";
 
 export const getAdminDashboard = async (req, res) => {
   try {
@@ -192,3 +193,80 @@ export const getAdminProfile = async (req, res) => {
     res.status(400).json({ success: false, message: err.message });
   }
 };
+
+export const createRole = async (req, res) => {
+  try {
+
+    const { name } = req.body;
+
+    const role = await Role.create({ name });
+
+    res.status(201).json({
+      success: true,
+      role
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message
+    })
+  }
+};
+
+export const getRoles = async (req, res) => {
+  try {
+    const roles = await Role.find().select("name");
+
+    res.status(200).json({
+      success: true,
+      roles,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+
+export const getAllAdmins = async (req, res) => {
+  try {
+
+    const admins = await Admin.find()
+      .populate("roles", "name")
+      .select("-password")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      admins
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
+};
+
+export const getAdminLogs = async (req, res) => {
+
+  try {
+
+    const logs = await AdminLog.find()
+      .populate("admin", "name email")
+      .sort({ createdAt: -1 })
+      .limit(20)
+
+    res.json({
+      success: true,
+      logs
+    })
+
+  } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
+}
