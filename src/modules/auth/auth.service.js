@@ -92,19 +92,22 @@ export const verifyOtpService = async (phone, otp) => {
 
   if (user.otp !== otp) throw new Error("Invalid OTP");
 
-  // ✅ Only phone verification
+  // phone verified
   user.phoneVerified = true;
-
-  // ❌ DO NOT VERIFY ADMIN HERE
-  // user.isVerified = true;  ← remove this
 
   user.otp = null;
   user.otpExpiry = null;
 
   await user.save();
 
-  // ❌ NO TOKEN HERE
-  return { user };
+  let token = null;
+
+  // ✅ only if admin verified
+  if (user.isVerified) {
+    token = generateToken(user._id);
+  }
+
+  return { user, token };
 };
 
 // Register new user

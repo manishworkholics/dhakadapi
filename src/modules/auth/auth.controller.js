@@ -43,6 +43,7 @@ export const sendOtp = async (req, res) => {
 
 export const verifyOtp = async (req, res) => {
   try {
+
     const { phone, otp } = req.body;
 
     if (!phone || !otp) {
@@ -52,9 +53,9 @@ export const verifyOtp = async (req, res) => {
       });
     }
 
-    const { user } = await verifyOtpService(phone, otp);
+    const { user, token } = await verifyOtpService(phone, otp);
 
-    // ❌ If admin not approved
+    // ❌ admin approval pending
     if (!user.isVerified) {
       return res.status(403).json({
         success: false,
@@ -70,10 +71,11 @@ export const verifyOtp = async (req, res) => {
       });
     }
 
-    // ✅ If admin approved (rare case)
+    // ✅ verified user → login allowed
     return res.status(200).json({
       success: true,
-      message: "OTP verified successfully. You can now login.",
+      message: "OTP verified successfully",
+      token,
       user: {
         _id: user._id,
         phone: user.phone,
@@ -84,10 +86,12 @@ export const verifyOtp = async (req, res) => {
     });
 
   } catch (error) {
+
     res.status(400).json({
       success: false,
       message: error.message,
     });
+
   }
 };
 
