@@ -4,6 +4,7 @@ import {
   getUserById,
   toggleBlockUser,
   deleteUser,
+  toggleVerifyUser
 } from "./admin.user.controller.js";
 import { adminProtect } from "../../middleware/adminMiddleware.js";
 import { authorizePermission } from "../../middleware/permissionMiddleware.js";
@@ -29,6 +30,13 @@ router.put(
   adminProtect,
   authorizePermission("manage_users"),
   toggleBlockUser
+);
+
+router.put(
+  "/users/:id/verify",
+  adminProtect,
+  authorizePermission("manage_users"),
+  toggleVerifyUser
 );
 
 router.delete(

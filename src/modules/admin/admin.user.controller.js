@@ -65,6 +65,37 @@ export const toggleBlockUser = async (req, res) => {
   }
 };
 
+export const toggleVerifyUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Toggle verification
+    user.isVerified = !user.isVerified;
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: user.isVerified
+        ? "User has been verified"
+        : "User verification removed",
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
 
 // Delete user
 // export const deleteUser = async (req, res) => {

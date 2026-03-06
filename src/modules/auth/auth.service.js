@@ -56,8 +56,31 @@ export const resendOtpService = async (phone) => {
 
 
 
+// export const verifyOtpService = async (phone, otp) => {
+//   const user = await User.findOne({ phone });
+//   if (!user) throw new Error("User not found");
+
+//   if (user.isBlocked) {
+//     throw new Error("Your account is blocked. Please contact support.");
+//   }
+
+//   const isExpired = user.otpExpiry < new Date();
+//   if (isExpired) throw new Error("OTP expired");
+//   if (user.otp !== otp) throw new Error("Invalid OTP");
+
+//   user.isVerified = true;
+//   user.otp = null;
+//   user.otpExpiry = null;
+//   await user.save();
+
+//   const token = generateToken(user._id);
+//   return { user, token };
+// };
+
 export const verifyOtpService = async (phone, otp) => {
+
   const user = await User.findOne({ phone });
+
   if (!user) throw new Error("User not found");
 
   if (user.isBlocked) {
@@ -66,18 +89,23 @@ export const verifyOtpService = async (phone, otp) => {
 
   const isExpired = user.otpExpiry < new Date();
   if (isExpired) throw new Error("OTP expired");
+
   if (user.otp !== otp) throw new Error("Invalid OTP");
 
-  user.isVerified = true;
+  // ✅ Only phone verification
+  user.phoneVerified = true;
+
+  // ❌ DO NOT VERIFY ADMIN HERE
+  // user.isVerified = true;  ← remove this
+
   user.otp = null;
   user.otpExpiry = null;
+
   await user.save();
 
-  const token = generateToken(user._id);
-  return { user, token };
+  // ❌ NO TOKEN HERE
+  return { user };
 };
-
-
 
 // Register new user
 export const registerUserService = async (name, email, phone, createdfor, password) => {

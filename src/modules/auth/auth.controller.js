@@ -15,18 +15,65 @@ export const sendOtp = async (req, res) => {
   }
 };
 
+// export const verifyOtp = async (req, res) => {
+//   try {
+//     const { phone, otp } = req.body;
+//     if (!phone || !otp)
+//       return res.status(400).json({ message: "Phone and OTP are required" });
+
+//     const { user, token } = await verifyOtpService(phone, otp);
+
+//     res.status(200).json({
+//       success: true,
+//       message: "OTP verified successfully",
+//       token,
+//       user: {
+//         _id: user._id,
+//         phone: user.phone,
+//         email: user.email,
+//         name: user.name,
+//         isVerified: user.isVerified,
+//       },
+//     });
+//   } catch (error) {
+//     res.status(400).json({ success: false, message: error.message });
+//   }
+// };
+
+
 export const verifyOtp = async (req, res) => {
   try {
     const { phone, otp } = req.body;
-    if (!phone || !otp)
-      return res.status(400).json({ message: "Phone and OTP are required" });
 
-    const { user, token } = await verifyOtpService(phone, otp);
+    if (!phone || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone and OTP are required",
+      });
+    }
 
-    res.status(200).json({
+    const { user } = await verifyOtpService(phone, otp);
+
+    // ❌ If admin not approved
+    if (!user.isVerified) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "User registered successfully. Pending for admin approval. After approval you will be able to login.",
+        user: {
+          _id: user._id,
+          phone: user.phone,
+          email: user.email,
+          name: user.name,
+          isVerified: user.isVerified,
+        },
+      });
+    }
+
+    // ✅ If admin approved (rare case)
+    return res.status(200).json({
       success: true,
-      message: "OTP verified successfully",
-      token,
+      message: "OTP verified successfully. You can now login.",
       user: {
         _id: user._id,
         phone: user.phone,
@@ -35,10 +82,15 @@ export const verifyOtp = async (req, res) => {
         isVerified: user.isVerified,
       },
     });
+
   } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
+
 
 
 export const resendOtp = async (req, res) => {
@@ -57,68 +109,6 @@ export const resendOtp = async (req, res) => {
     res.status(400).json({ success: false, message: err.message });
   }
 };
-
-// export const registerUser = async (req, res) => {
-//   try {
-//     const { name, email, phone, createdfor, password } = req.body;
-
-//     if (!email || !password || !phone)
-//       return res.status(400).json({ message: "Email, phone and password are required" });
-
-//     // 🔍 Check existing user
-//     const existingUser = await User.findOne({
-//       $or: [{ email }, { phone }]
-//     });
-
-//     // ⚠️ If user exists but email not verified
-//     if (existingUser && !existingUser.emailVerified) {
-
-//       // resend OTP
-//       const otp = await resendEmailOtpService(email);
-
-//       return res.status(200).json({
-//         success: true,
-//         message: "Email not verified. OTP sent again.",
-//         requiresVerification: true,
-//         user: {
-//           _id: existingUser._id,
-//           email: existingUser.email,
-//           phone: existingUser.phone
-//         },
-//         debugOtp: otp
-//       });
-//     }
-
-//     // ❌ If user exists and verified
-//     if (existingUser && existingUser.emailVerified) {
-//       return res.status(409).json({
-//         success: false,
-//         message: "Email or phone already registered"
-//       });
-//     }
-
-//     // ✅ New user → register
-//     const { user } = await registerUserService(name, email, phone, createdfor, password);
-
-//     const otp = await emailOtpService(email);
-
-//     return res.status(201).json({
-//       success: true,
-//       message: "Registration successful. OTP sent to email.",
-//       requiresVerification: true,
-//       user: {
-//         _id: user._id,
-//         email: user.email,
-//         phone: user.phone
-//       },
-//       debugOtp: otp
-//     });
-
-//   } catch (err) {
-//     res.status(500).json({ success: false, message: err.message });
-//   }
-// };
-
 
 export const registerUser = async (req, res) => {
   try {
@@ -203,6 +193,8 @@ export const emailLogin = async (req, res) => {
     if (!user)
       return res.status(400).json({ success: false, message: "Invalid credentials" });
 
+
+
     // ❌ Not verified → send OTP again
     if (!user.emailVerified) {
 
@@ -220,6 +212,13 @@ export const emailLogin = async (req, res) => {
       });
     }
 
+    if (!user.isVerified) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "Your account is pending for admin approval. Please wait until admin verifies your profile.",
+      });
+    }
     // ✅ Verified → Login success
     return res.status(200).json({
       success: true,
