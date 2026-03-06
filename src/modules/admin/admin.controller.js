@@ -10,6 +10,7 @@ import Payment from "../plan/Payment.model.js";
 import Profile from "../profile/profile.model.js";
 import Role from "./role.model.js";
 import AdminLog from "./adminLog.model.js";
+import Permission from "./permission.model.js";
 
 export const getAdminDashboard = async (req, res) => {
   try {
@@ -197,9 +198,12 @@ export const getAdminProfile = async (req, res) => {
 export const createRole = async (req, res) => {
   try {
 
-    const { name } = req.body;
+    const { name, permissions } = req.body;
 
-    const role = await Role.create({ name });
+    const role = await Role.create({
+      name,
+      permissions
+    });
 
     res.status(201).json({
       success: true,
@@ -207,26 +211,150 @@ export const createRole = async (req, res) => {
     });
 
   } catch (err) {
+
     res.status(500).json({
       success: false,
       message: err.message
-    })
+    });
+
+  }
+};
+
+export const updateRolePermissions = async (req, res) => {
+  try {
+
+    const { permissions } = req.body;
+
+    const role = await Role.findByIdAndUpdate(
+      req.params.id,
+      { permissions },
+      { new: true }
+    ).populate("permissions", "name");
+
+    res.status(200).json({
+      success: true,
+      role
+    });
+
+  } catch (err) {
+
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
+
+  }
+};
+
+
+
+// CREATE PERMISSION
+export const createPermission = async (req, res) => {
+  try {
+
+    const { name, description } = req.body;
+
+    if (!name) {
+      return res.status(400).json({
+        success: false,
+        message: "Permission name required"
+      });
+    }
+
+    const exists = await Permission.findOne({ name });
+
+    if (exists) {
+      return res.status(400).json({
+        success: false,
+        message: "Permission already exists"
+      });
+    }
+
+    const permission = await Permission.create({
+      name,
+      description
+    });
+
+    res.status(201).json({
+      success: true,
+      permission
+    });
+
+  } catch (err) {
+
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
+
+  }
+};
+
+
+
+// GET ALL PERMISSIONS
+export const getPermissions = async (req, res) => {
+  try {
+
+    const permissions = await Permission.find().sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      permissions
+    });
+
+  } catch (err) {
+
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
+
+  }
+};
+
+
+
+// DELETE PERMISSION
+export const deletePermission = async (req, res) => {
+  try {
+
+    await Permission.findByIdAndDelete(req.params.id);
+
+    res.status(200).json({
+      success: true,
+      message: "Permission deleted"
+    });
+
+  } catch (err) {
+
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
+
   }
 };
 
 export const getRoles = async (req, res) => {
   try {
-    const roles = await Role.find().select("name");
+
+    const roles = await Role.find()
+      .populate("permissions", "name")
+      .sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
-      roles,
+      roles
     });
+
   } catch (err) {
+
     res.status(500).json({
       success: false,
-      message: err.message,
+      message: err.message
     });
+
   }
 };
 

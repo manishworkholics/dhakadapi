@@ -52,10 +52,8 @@ app.use("/api/interest", sendinterestRoutes);
 import shortlistRoutes from "./modules/shortlist/shortlist.routes.js";
 app.use("/api/shortlist", shortlistRoutes);
 
-
 import uploadRoutes from "./modules/profile/upload.routes.js";
 app.use("/api", uploadRoutes);
-
 
 import adminProfileRoutes from "./modules/admin/admin.profile.routes.js";
 app.use("/api/admin", adminProfileRoutes);
@@ -73,10 +71,8 @@ app.use("/api/plan", planRoutes);
 import contactRoutes from "./modules/contactus/contact.routes.js";
 app.use("/api/contact", contactRoutes);
 
-
 import chatRoutes from "./modules/chat/chat.routes.js";
 app.use("/api/chat", chatRoutes);
-
 
 import PartnerPreferenceRoutes from "./modules/match/partnerPreference.routes.js";
 app.use("/api/partner-preference", PartnerPreferenceRoutes);
@@ -87,11 +83,16 @@ app.use("/api/matches", MatchesRoutes);
 import NotificationRoutes from "./modules/notification/notification.route.js";
 app.use("/api/notifications", NotificationRoutes);
 
-
 import ReviewRoutes from "./modules/review/review.routes.js";
 app.use("/api/review", ReviewRoutes);
 
-import chatSocket from "./modules/chat/chat.socket.js";
+import seoRoutes from "./modules/seo/seo.routes.js";
+app.use("/api/seo", seoRoutes);
+
+import blogRoutes from "./modules/blog/blog.routes.js";
+app.use("/api/blogs", blogRoutes);
+
+
 
 const server = http.createServer(app);
 
@@ -101,11 +102,9 @@ const io = new Server(server, {
   },
 });
 
-// chatSocket(io);
 
-// export { io };
 
-const onlineUsers = new Map(); // userId -> socketId
+const onlineUsers = new Map();
 
 io.on("connection", (socket) => {
   console.log("Socket connected:", socket.id);

@@ -1,5 +1,5 @@
 import express from "express";
-import { registerAdmin, adminLogin, getAdminProfile, getAdminDashboard, getRoles, getAllAdmins, createRole, getAdminLogs } from "./admin.controller.js";
+import { registerAdmin, adminLogin, getAdminProfile, getAdminDashboard, getRoles, getAllAdmins, createRole, getAdminLogs, createPermission, getPermissions, deletePermission, updateRolePermissions } from "./admin.controller.js";
 import { adminProtect } from "../../middleware/adminMiddleware.js";
 import { authorizePermission } from "../../middleware/permissionMiddleware.js";
 
@@ -36,11 +36,32 @@ router.get(
   getRoles
 );
 
+router.put("/roles/:id/permissions",
+  adminProtect,
+  authorizePermission("manage_admins"),
+  updateRolePermissions
+);
+
 router.get(
   "/list",
   adminProtect,
   authorizePermission("manage_admins"),
   getAllAdmins
+);
+router.post("/permissions",
+  adminProtect,
+  authorizePermission("manage_admins"),
+  createPermission
+);
+router.get("/permissions",
+  adminProtect,
+  authorizePermission("manage_admins"),
+  getPermissions
+);
+router.delete("/permissions/:id",
+  adminProtect,
+  authorizePermission("manage_admins"),
+  deletePermission
 );
 
 export default router;
